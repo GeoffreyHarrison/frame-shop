@@ -22,6 +22,7 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug
@@ -38,4 +39,11 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Ignore test coverage
+coverage/
 next-env.d.ts
