@@ -6,11 +6,8 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL;
-  const dbKeys = Object.keys(process.env).filter(k => k.includes("DATABASE") || k.includes("POSTGRES") || k.includes("PG"));
-  console.log("[prisma] DATABASE_URL present:", !!url, "| starts with:", url?.slice(0, 15), "| related keys:", dbKeys);
   const adapter = new PrismaPg({
-    connectionString: url!,
+    connectionString: process.env.DATABASE_URL!,
   });
   return new PrismaClient({ adapter });
 }
