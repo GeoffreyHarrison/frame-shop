@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  lastName      String
+  firstName     String
+  phone         String
+  contactMethod String
+  address       String
+  suite         String?
+  spouse        String?
+  city          String
+  state         String
+  zip           String
+  email         String?
+  secondPhone   String?
+  company       String?
+  rewards       Boolean  @default(false)
+  discount      Float    @default(0)
+  type          String   @default("Customer")
+  taxable       Boolean  @default(true)
+  taxId         String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders Order[]
+}
+
+model Order {
+  id                String    @id @default(cuid())
+  customerId        String
+  customer          Customer  @relation(fields: [customerId], references: [id])
+  orderNumber       String    @unique
+  description       String
+  dueDate           DateTime
+  takenDate         DateTime
+  must              Boolean   @default(false)
+  type              String    @default("Framing")
+  store             String
+  designer          String
+  totalPrice        Float
+  codPrice          Float     @default(0)
+  itemCount         Int       @default(1)
+  frameSku          String
+  frameNotes        String
+  frameQty          Int       @default(1)
+  frameSize         String
+  footage           Float
+  topMat            String?
+  secondMat         String?
+  thirdMat          String?
+  matNotes          String?
+  matWidthLessThan  Boolean   @default(false)
+  glass             String
+  overSize          Boolean   @default(false)
+  mounting          String
+  notes             String?
+  delayed           Boolean   @default(false)
+  verified          Boolean   @default(false)
+  verifiedDate      DateTime?
+  tabled            Boolean   @default(false)
+  tabledDate        DateTime?
+  frameBuilt        Boolean   @default(false)
+  frameBuiltDate    DateTime?
+  frameReceived     Boolean   @default(false)
+  frameReceivedDate DateTime?
+  completed         Boolean   @default(false)
+  completedDate     DateTime?
+  binLocation       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  comments     Comment[]
+  frameToOrder FrameToOrder?
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  author    String
+  text      String
+  createdAt DateTime
+}
+
+model FrameToOrder {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  frameSku    String
+  frameNotes  String
+  footage     Float
+  size        String
+  qty         Int
+  vendor      String
+  status      String    @default("On List")
+  orderedDate DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

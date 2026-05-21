@@ -8,7 +8,8 @@
     "frameNotes": "Dark Walnut",
     "footage": 14,
     "size": "36x48",
-    "vendor": "Decor",
+    "qty": 1,
+    "vendor": "Decor Moulding",
     "status": "Ordered",
     "orderedDate": "2026-05-05"
   },
@@ -21,7 +22,8 @@
     "frameNotes": "Black Metal",
     "footage": 10,
     "size": "24x36",
-    "vendor": "Decor",
+    "qty": 1,
+    "vendor": "Decor Moulding",
     "status": "On List"
   },
   {
@@ -33,7 +35,8 @@
     "frameNotes": "Cherry Traditional",
     "footage": 5.2,
     "size": "14x17",
-    "vendor": "Larson",
+    "qty": 1,
+    "vendor": "Larson Juhl",
     "status": "Ordered",
     "orderedDate": "2026-05-11"
   },
@@ -46,7 +49,8 @@
     "frameNotes": "Natural Maple Float",
     "footage": 17,
     "size": "40x60",
-    "vendor": "Decor",
+    "qty": 2,
+    "vendor": "Decor Moulding",
     "status": "Ordered",
     "orderedDate": "2026-05-08"
   },
@@ -59,7 +63,8 @@
     "frameNotes": "Aged Bronze",
     "footage": 8.3,
     "size": "22x28",
-    "vendor": "Larson",
+    "qty": 1,
+    "vendor": "Larson Juhl",
     "status": "On List"
   },
   {
@@ -71,7 +76,8 @@
     "frameNotes": "Simple Black Wood",
     "footage": 6,
     "size": "16x20",
-    "vendor": "Roma",
+    "qty": 1,
+    "vendor": "Roma Moulding",
     "status": "On List"
   },
   {
@@ -83,7 +89,8 @@
     "frameNotes": "Aluminum Modern",
     "footage": 12,
     "size": "30x42",
-    "vendor": "Decor",
+    "qty": 1,
+    "vendor": "Decor Moulding",
     "status": "On List"
   },
   {
@@ -95,7 +102,8 @@
     "frameNotes": "Deep Black Shadow",
     "footage": 12,
     "size": "32x40",
-    "vendor": "Decor",
+    "qty": 2,
+    "vendor": "Decor Moulding",
     "status": "Ordered",
     "orderedDate": "2026-05-12"
   },
@@ -108,7 +116,8 @@
     "frameNotes": "Antique Gold Ornate",
     "footage": 5.3,
     "size": "14x18",
-    "vendor": "Larson",
+    "qty": 1,
+    "vendor": "Larson Juhl",
     "status": "On List"
   },
   {
@@ -120,7 +129,8 @@
     "frameNotes": "Satin Silver",
     "footage": 13,
     "size": "8.5x11",
-    "vendor": "Roma",
+    "qty": 1,
+    "vendor": "Roma Moulding",
     "status": "Ordered",
     "orderedDate": "2026-05-10"
   },
@@ -133,7 +143,8 @@
     "frameNotes": "Matte Black Modern",
     "footage": 40,
     "size": "24x36",
-    "vendor": "Decor",
+    "qty": 3,
+    "vendor": "Decor Moulding",
     "status": "On List"
   },
   {
@@ -145,7 +156,8 @@
     "frameNotes": "Ornate Gold Baroque",
     "footage": 9,
     "size": "24x30",
-    "vendor": "Larson",
+    "qty": 1,
+    "vendor": "Larson Juhl",
     "status": "On List"
   }
 ]

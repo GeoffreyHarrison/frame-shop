@@ -10,50 +10,52 @@ interface OrdersByDayTableProps {
 
 export function OrdersByDayTable({ ordersByDay }: OrdersByDayTableProps) {
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-primary-dark/20 rounded-lg overflow-hidden">
       <table className="w-full">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+          <tr className="bg-primary-dark">
+            <th className="text-left px-4 py-3 text-sm font-semibold text-white">
               Day
             </th>
-            <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+            <th className="text-left px-4 py-3 text-sm font-semibold text-white">
               Date
             </th>
-            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700">
+            <th className="text-center px-4 py-3 text-sm font-semibold text-white">
               # Orders
             </th>
-            <th className="text-center px-4 py-3 text-sm font-semibold text-gray-700 w-20">
+            <th className="text-center px-4 py-3 text-sm font-semibold text-white w-20">
               View
             </th>
           </tr>
         </thead>
         <tbody>
-          {ordersByDay.map((day) => (
+          {ordersByDay.map((day, index) => (
             <tr
               key={day.date}
-              className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+              className={`border-b border-primary-dark/10 hover:bg-primary/5 transition-colors ${
+                index % 2 === 0 ? "bg-white" : "bg-light-grey"
+              }`}
             >
-              <td className="px-4 py-3 text-sm text-gray-800">
+              <td className="px-4 py-3 text-sm font-bold text-primary-dark">
                 {day.dayName}
               </td>
-              <td className="px-4 py-3 text-sm text-gray-600">
+              <td className="px-4 py-3 text-sm text-primary">
                 {new Date(day.date + "T00:00:00").toLocaleDateString("en-US", {
                   month: "numeric",
                   day: "numeric",
                   year: "numeric",
                 })}
               </td>
-              <td className="px-4 py-3 text-sm text-gray-800 text-center font-medium">
+              <td className="px-4 py-3 text-sm text-primary text-center font-medium">
                 {day.orderCount}
               </td>
               <td className="px-4 py-3 text-center">
                 <Link
                   href={`/framing-orders/${day.date}`}
-                  className="inline-flex p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors"
+                  className="inline-flex p-1.5 text-primary-dark hover:bg-primary-dark/10 rounded-md transition-colors"
                   title={`View orders for ${day.date}`}
                 >
-                  <Eye size={18} />
+                  <Eye size={22} />
                 </Link>
               </td>
             </tr>
@@ -62,7 +64,7 @@ export function OrdersByDayTable({ ordersByDay }: OrdersByDayTableProps) {
             <tr>
               <td
                 colSpan={4}
-                className="px-4 py-8 text-center text-sm text-gray-500"
+                className="px-4 py-8 text-center text-sm text-primary/60"
               >
                 No orders found
               </td>

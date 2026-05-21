@@ -33,7 +33,7 @@ export default function RootLayout({
         <TopBar />
         <div className="flex flex-1 overflow-hidden gap-3">
           <LeftSidebar />
-          <main className="flex-1 overflow-y-auto bg-panel rounded-2xl shadow-lg p-8 border border-warm-border">
+          <main className="flex-1 overflow-y-auto scrollbar-hide bg-panel rounded-2xl shadow-lg p-8 border border-warm-border">
             {children}
           </main>
           <RightSidebar />

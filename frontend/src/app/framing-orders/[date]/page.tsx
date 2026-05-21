@@ -1,6 +1,5 @@
 import { DailyDetailTable } from "@/components/framing-orders/daily-detail-table";
-import ordersData from "@/data/dummy-orders.json";
-import type { Order } from "@/lib/types";
+import { getOrdersForDate } from "@/lib/db";
 import { formatDate } from "@/lib/due-date";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -11,8 +10,7 @@ interface DailyDetailPageProps {
 
 export default async function DailyDetailPage({ params }: DailyDetailPageProps) {
   const { date } = await params;
-  const allOrders = ordersData as Order[];
-  const dayOrders = allOrders.filter((order) => order.dueDate === date);
+  const dayOrders = await getOrdersForDate(date);
 
   return (
     <div>
@@ -24,12 +22,12 @@ export default async function DailyDetailPage({ params }: DailyDetailPageProps) 
         >
           <ArrowLeft size={22} />
         </Link>
-        <h1 className="text-2xl font-bold text-primary font-serif">Framing Orders:</h1>
+        <h1 className="text-2xl font-bold text-primary-dark font-serif">Framing Orders:</h1>
       </div>
 
-      <div className="inline-block bg-light-grey px-5 py-2.5 rounded-lg border border-warm-border mb-7">
-        <span className="text-base text-primary-dark font-medium font-serif">Due Date: </span>
-        <span className="text-base text-primary">{formatDate(date)}</span>
+      <div className="inline-block bg-primary-dark px-5 py-2.5 rounded-lg mb-7">
+        <span className="text-base text-white font-bold font-serif">Due Date: </span>
+        <span className="text-base text-white font-normal">{formatDate(date)}</span>
       </div>
 
       <DailyDetailTable orders={dayOrders} date={date} />

@@ -1,19 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { X, Send } from "lucide-react";
+import { CommentCircle } from "./status-icon-button";
 import type { OrderComment } from "@/lib/types";
 
 interface CommentDialogProps {
   comments: OrderComment[];
   onAddComment?: (text: string) => void;
   hasComments: boolean;
+  size?: number;
 }
 
 export function CommentDialog({
   comments: initialComments,
   onAddComment,
   hasComments,
+  size = 32,
 }: CommentDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -34,17 +37,11 @@ export function CommentDialog({
 
   return (
     <>
-      <button
+      <CommentCircle
+        hasComments={hasComments || comments.length > 0}
+        size={size}
         onClick={() => setIsOpen(true)}
-        className={`inline-flex p-1 rounded-md transition-colors hover:bg-gray-100 ${
-          hasComments || comments.length > 0
-            ? "text-green-500"
-            : "text-gray-300 hover:text-gray-400"
-        }`}
-        title="Comments"
-      >
-        <MessageCircle size={18} />
-      </button>
+      />
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

@@ -51,6 +51,7 @@ export type MountingType =
 export interface Order {
   id: string;
   customerId: string;
+  customerName?: string;
   orderNumber: string;
   description: string;
   dueDate: string; // ISO date string
@@ -124,6 +125,7 @@ export interface FrameToOrder {
   frameNotes: string;
   footage: number;
   size: string;
+  qty: number;
   vendor: string;
   status: "On List" | "Ordered" | "Received";
   orderedDate?: string;

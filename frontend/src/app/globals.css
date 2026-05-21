@@ -7,13 +7,35 @@
   --color-accent-red: #FF3131;
   --color-accent-yellow: #EBCD5A;
   --color-light-grey: #F1F1F1;
-  --color-panel: #FAF8F5;
-  --color-warm-border: #E8E4DF;
+  --color-panel: #F5F5F7;
+  --color-warm-border: #E2E2E6;
   --font-serif: var(--font-libre-baskerville), Georgia, serif;
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 body {
   background: #303B6B;
   color: #485074;
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+@media print {
+  /* Hide navigation chrome — only print the main content area */
+  header, aside { display: none !important; }
+  /* Hide elements explicitly marked no-print (page headings, icon buttons) */
+  .no-print { display: none !important; }
+  /* Let main overflow so all content prints */
+  main { overflow: visible !important; padding: 0 !important; }
+  /* Strip the navy page background */
+  html, body { background: white !important; padding: 0 !important; gap: 0 !important; }
+  /* Force black text and transparent backgrounds for readability */
+  * { color: black !important; background: transparent !important;
+      border-color: #ccc !important; box-shadow: none !important; }
+  @page { margin: 1.5cm; }
 }
