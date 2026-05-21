@@ -4,6 +4,8 @@ import { formatDate } from "@/lib/due-date";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 interface DailyDetailPageProps {
   params: Promise<{ date: string }>;
 }

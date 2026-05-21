@@ -2,6 +2,8 @@ import { getOrderedFramesForVendor } from "@/lib/db";
 import { slugToVendor } from "@/lib/vendor-orders";
 import { OrderListTable } from "@/components/frames/order-list-table";
 
+export const dynamic = 'force-dynamic';
+
 interface OrderListPageProps {
   params: Promise<{ vendor: string }>;
 }

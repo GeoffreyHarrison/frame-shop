@@ -1,6 +1,8 @@
 import { OrdersByDayTable } from "@/components/framing-orders/orders-by-day-table";
 import { getOrdersByDay } from "@/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 export default async function FramingOrdersPage() {
   const ordersByDay = await getOrdersByDay();
 

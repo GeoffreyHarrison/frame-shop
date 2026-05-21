@@ -1,6 +1,8 @@
 import { FramesToOrderTable } from "@/components/frames/frames-to-order-table";
 import { getAllFramesToOrder } from "@/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 export default async function FramesToOrderPage() {
   const frames = await getAllFramesToOrder();
 
