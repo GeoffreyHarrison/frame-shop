@@ -101,18 +101,56 @@ Explore: Could this page use dropdown KPI metric boxes that expand to show order
 
 ### 2.3 Binventory Page (Completed Orders Waiting for Pickup)
 **Status:** Medium priority
+**Planning Document:** `context/planning/binventory-page.md` (to be created)
 **Description:**
-Show orders that are completed but not yet picked up. Include:
-- Primary sorting/grouping by bin number
-- Secondary sort options: order number, due date
-- "Picked Up" button for each order (marks as picked up, removes from list)
+Show completed orders that are not yet picked up, organized by bin location. Staff retrieve orders from bins and mark them as picked up.
+
+**Data Requirements:**
+- Filter: `completedAt IS NOT NULL AND pickedUpAt IS NULL`
+- Read fields: `binLocation`, `orderNumber`, `itemCount`, `customerId` → customer name, `customer.contactMethod`, `dueDate`
+- Display: binLocation, orderNumber, quantity, customerName, contactMethod, dueDate, pickedUp button
+
+**UI Layout:**
+1. **Page Heading** — "Binventory" in same style as other main panel pages (navy bar)
+2. **Sort Options** (above table):
+   - Sort by: [Bin Name | Due Date | Order Number | Customer Name]
+   - Direction: [↑ Ascending | ↓ Descending]
+   - Default: Due Date (Ascending)
+3. **Table** — styled like Frame List tables:
+   - **Header row:** Navy background with white text, column names
+   - **Data rows:** Alternating white and light-grey background for visual distinction
+   - **Columns:**
+     | Bin | Order # | Qty | Customer Name | Contact | Due Date | Picked Up |
+     - Bin: the `binLocation` value (e.g., "A", "B", "C")
+     - Order #: `orderNumber` (font-mono)
+     - Qty: `itemCount` formatted as (x2)
+     - Customer Name: customer's firstName + lastName
+     - Contact: customer's `contactMethod` (Call, Text, Email)
+     - Due Date: formatted date (e.g., 5/25/2026)
+     - Picked Up: smaller version of the picked-up button (half the size of the Order Details button)
+4. **Empty State:** If no completed-but-unpicked-up orders, show "No orders waiting for pickup"
+
+**Styling Notes:**
+- Table border: `border-primary-dark/15`
+- Header: `bg-primary-dark`, `text-white`
+- Rows: alternating `bg-white` and `bg-light-grey`
+- Border between rows: `border-b border-primary-dark/10`
+- Picked Up button: Navy circle when selected, gray border when not (same as Order Details but smaller)
+
+**Functionality:**
+- Click Picked Up button → calls Server Action to set `pickedUpAt` → order disappears from table
+- Clicking order number → navigates to Order Details page
+- Sort options update table dynamically (no page reload)
 
 **Acceptance Criteria:**
-- Displays only completed + not-yet-picked-up orders
-- Grouped/sorted by bin number by default
-- Sort dropdown allows switching to order number or due date
-- "Picked Up" button works and removes order from list
-- Page accessible from right panel
+- ✅ Displays only completed + not-yet-picked-up orders
+- ✅ Table uses Frame List styling (navy header, alternating row colors)
+- ✅ Sort options: bin name, due date, order number, customer name (asc/desc)
+- ✅ Default sort: due date ascending
+- ✅ Picked Up button (smaller size) works and removes order immediately
+- ✅ Clicking order number opens Order Details
+- ✅ Page heading matches other main panel pages
+- ✅ Page accessible from right panel (and left panel in future)
 
 ---
 
@@ -238,18 +276,32 @@ Planning documents are created for complex tasks to break down implementation st
 - **Task 1.1:** `context/planning/order_status_tracking.md` — Schema changes, Server Actions, UI updates, migration strategy
 
 
-## My Answers
-1. You should have the following timestamp comlumns, included is what they map to. Some of the buttons will be in multiple locations even if I list just one:
-  - `receivedAt` — timestamp when frame was received from vendor - button is on "To Order:" lists on right panel 
-  - `verifiedAt` — timestamp when order was verified (aka staffer double checked all measurements) - button is check mark button on order page
-  - `builtAt` — timestamp when frame was built by staffer - button is vertical rectangle button on order page
-  - `tabledAt` - timestamp when order was "tabled" aka a staffer cut and mounted mats and hit the "Tabled" button - button is T button on order page
-  - `pickedUpAt` — timestamp when customer picked up order - currently don't have button for this, part of future development
-  - `mustHaveStatus` - timestamp when staffer marked order as "Must Have" - button is star button on order page
-  - `delayedStatus` - timestamp when staffer marked order as "Delayed" - button is exclamation button on order page
-  - `completedAt` - timestamp when staffer marked order as "Complete", happens after all other steps except picked up, after this staffer places order in a bin and updates order with that bin's letter, then contacts customer through preffered contact method to inform them that the order is ready for pickup - button is smiley face button on order page.
-  - `binLocation` - string column that contains letter of bin the order is stored in. This is different from our other status timestamp columns, but is an important datapoint to track as it will inform staffers where to find the order. 
+## Task Intake
+1. On order page, when there is no Frame Received date it currently says Invalid Date. I want to eventually update this so that it shows the following:
+  - When order is created the frame goes to the Frame List linked on right panel - when that happens and neither Order nor Received have been clicked, it should say Frame Received: Frame not ordered
+  - When frame for order has been ordered but not received it should say "Frame Received: Frame ordered but not received"
+  - When received button has been clicked it should do as it currently does and list the receivedAt date
 
-2. I included them above, but lets store them as timestamps just in case the owner and manager want to see when an order was marked delayed or must have. Then use the prescense of a timestamp to indicate whether that button should be active or not.
+2. On order detailes page I want the elements in the main panel, the different rectangle divs with the blue borders, to stretch further over to the right side of the panel. The spacing between those divs and the sides of the panel should be the same from the right side as it is for the left.
 
-3. We will spec that out when we spec out the Daily Summaries page more.
+3. Need to make sure comments are written to database with timestamp and staffer who commented.
+
+4. None of the dates are showing up in the app since moving to database. 
+
+
+Geoffrey Harrison:
+	Quick question. Are all the bins labeled as single capital letters? And if so how far into the alphabet do they go?
+
+Jeff Ballance:
+	Welll mostly! So they go A-L then we have P, P-2, P-4, Pcounter, Pwall, Wall, Nook, Cranny
+
+  Bins:
+  - Letters A through L
+  - P
+  - P-2
+  - P-4
+  - Pcounter
+  - Pwall
+  - Wall
+  - Nook
+  - Cranny
