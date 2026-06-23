@@ -52,6 +52,7 @@ export interface Order {
   id: string;
   customerId: string;
   customerName?: string;
+  customerContactMethod?: string;
   orderNumber: string;
   description: string;
   dueDate: string; // ISO date string

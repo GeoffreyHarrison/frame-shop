@@ -17,6 +17,7 @@ function mapOrder(row: any): Order {
     customerName: row.customer
       ? `${row.customer.firstName} ${row.customer.lastName}`
       : undefined,
+    customerContactMethod: row.customer?.contactMethod,
     orderNumber: row.orderNumber,
     description: row.description,
     dueDate: toDateStr(row.dueDate),

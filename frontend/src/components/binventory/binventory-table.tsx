@@ -174,7 +174,9 @@ export function BinventoryTable({ orders: initialOrders }: BinventoryTableProps)
                 <td className="px-4 py-3 text-sm text-primary-dark">
                   {order.customerName || "Unknown"}
                 </td>
-                <td className="px-4 py-3 text-sm text-primary/70">—</td>
+                <td className="px-4 py-3 text-sm text-primary/70">
+                  {order.customerContactMethod || "—"}
+                </td>
                 <td className="px-4 py-3 text-sm text-primary text-center">{formatDate(order.dueDate)}</td>
                 <td className="px-4 py-3 text-center">
                   <button

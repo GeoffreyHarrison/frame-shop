@@ -173,6 +173,39 @@ Adapt the original search functionality to current UI and add missing pieces:
 
 ---
 
+### 2.5 Customer Directory
+**Status:** Medium priority
+**Planning Document:** `context/planning/customer-directory.md` (to be created)
+**Description:**
+Create a customer directory page accessible from the top bar. Display all customers with ability to:
+- View customer details (name, phone, email, contact method, address, company, type, notes, etc.)
+- Create new customers
+- Edit existing customer information
+- Search/filter customers by name, company, or type
+
+**Data Display:**
+- Table with columns: Customer Name, Phone, Email, Contact Method, Type, Company
+- Click customer row → view/edit customer details modal or page
+- Search bar at top to filter by name or company
+
+**Subtask: Order Contact Method Display**
+When implementing this task, also ensure:
+- Customer contact method (`contactMethod`) is properly associated with orders
+- Add `customerContactMethod` field to Order interface (COMPLETED in this commit)
+- Update all order displays (Binventory, Daily Detail, Order Search) to show customer contact method
+- This ensures staff can see preferred contact method when managing orders
+
+**Acceptance Criteria:**
+- ✅ Customer directory page accessible from top bar
+- ✅ Display all customers in a table
+- ✅ Search/filter functionality works
+- ✅ Can create new customers with all required fields
+- ✅ Can edit existing customer information
+- ✅ Contact method displays correctly in all order views (Binventory, etc.)
+- ✅ Page styling matches other main panels
+
+---
+
 ## Phase 3: Supporting Lists
 
 ### 3.1 Mat List
