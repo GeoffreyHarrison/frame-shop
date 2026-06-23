@@ -64,7 +64,7 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
 
   const handleBinLocationChange = async (value: string) => {
     setBinLocation(value);
-    if (value.trim() && order.completedAt) {
+    if (value.trim()) {
       await updateBinLocation(order.id, value.trim());
     }
   };
