@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { StatusIconButton } from "./status-icon-button";
 import { CommentDialog } from "./comment-dialog";
-import { Download } from "lucide-react";
+import { Download, ShoppingBag } from "lucide-react";
 import type { Order, Customer } from "@/lib/types";
 import { formatDate } from "@/lib/due-date";
 import {
@@ -66,6 +66,21 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
     setBinLocation(value);
     if (value.trim() && order.completedAt) {
       await updateBinLocation(order.id, value.trim());
+    }
+  };
+
+  const handlePickedUpToggle = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const isPickedUp = Boolean(order.pickedUpAt);
+      if (isPickedUp) {
+        await clearOrderStatus(order.id, 'pickedUp');
+      } else {
+        await updateOrderStatus(order.id, 'pickedUp');
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -297,6 +312,44 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             </span>
           </div>
         )}
+
+        {/* Picked Up Section */}
+        <div className="mt-4 pt-3 border-t border-warm-border">
+          <div className="flex items-center gap-4">
+            {/* Picked Up Button — double size of other status buttons */}
+            <button
+              onClick={handlePickedUpToggle}
+              disabled={isUpdating}
+              className="hover:scale-105 transition-transform cursor-pointer shrink-0 disabled:opacity-50"
+              title="Picked Up"
+            >
+              <div
+                style={{ width: BADGE_SIZE * 2, height: BADGE_SIZE * 2 }}
+                className={`rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                  order.pickedUpAt
+                    ? "bg-primary-dark"
+                    : "border border-primary/25 bg-transparent"
+                }`}
+              >
+                <ShoppingBag
+                  size={Math.round(BADGE_SIZE * 2 * 0.52)}
+                  className={order.pickedUpAt ? "text-panel" : "text-primary/25"}
+                  strokeWidth={2}
+                />
+              </div>
+            </button>
+
+            {/* Text display when picked up */}
+            <div>
+              <span className="text-sm font-bold text-primary-dark block">Picked Up</span>
+              {order.pickedUpAt && (
+                <span className="text-xs text-primary/50">
+                  Order picked up on {formatDate(order.pickedUpAt)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Notes */}
