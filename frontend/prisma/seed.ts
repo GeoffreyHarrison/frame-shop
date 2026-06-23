@@ -55,8 +55,22 @@ async function main() {
 
   // Seed orders (and their comments)
   const orderIdMap: Record<string, string> = {};
+  const now = new Date();
 
-  for (const o of ordersData as any[]) {
+  for (let i = 0; i < ordersData.length; i++) {
+    const o = (ordersData as any[])[i];
+
+    // Vary status timestamps for testing
+    // Index helps distribute different statuses across orders
+    const receivedTime = new Date(now.getTime() - (ordersData.length - i) * 3600000); // staggered by hour
+    const verifiedTime = i % 2 === 0 ? new Date(receivedTime.getTime() + 600000) : null; // every 2nd order verified
+    const tabledTime = i % 3 === 0 ? new Date(verifiedTime?.getTime() ?? receivedTime.getTime() + 1200000) : null;
+    const builtTime = i % 4 === 0 ? new Date(tabledTime?.getTime() ?? receivedTime.getTime() + 1800000) : null;
+    const completedTime = i % 5 === 0 ? new Date(builtTime?.getTime() ?? receivedTime.getTime() + 2400000) : null;
+    const binLetter = completedTime ? String.fromCharCode(65 + (i % 5)) : null; // A-E for completed orders
+    const mustHaveTime = i % 7 === 0 ? new Date(receivedTime.getTime() + 300000) : null;
+    const delayedTime = i % 6 === 0 ? new Date(receivedTime.getTime() + 400000) : null;
+
     const created = await prisma.order.create({
       data: {
         customerId: customerIdMap[o.customerId],
@@ -96,7 +110,16 @@ async function main() {
         frameReceivedDate: parseDate(o.frameReceivedDate),
         completed: o.completed ?? false,
         completedDate: parseDate(o.completedDate),
-        binLocation: o.binLocation ?? null,
+        binLocation: binLetter,
+        // New status timestamp columns
+        receivedAt: receivedTime,
+        verifiedAt: verifiedTime,
+        tabledAt: tabledTime,
+        builtAt: builtTime,
+        completedAt: completedTime,
+        pickedUpAt: null, // Not in use yet (task 1.2)
+        mustHaveStatus: mustHaveTime,
+        delayedStatus: delayedTime,
         comments: {
           create: (o.comments ?? []).map((c: any) => ({
             author: c.author,
@@ -108,7 +131,7 @@ async function main() {
     });
     orderIdMap[o.id] = created.id;
   }
-  console.log(`  Seeded ${Object.keys(orderIdMap).length} orders`);
+  console.log(`  Seeded ${Object.keys(orderIdMap).length} orders with varied status timestamps`);
 
   // Seed frames to order
   for (const f of framesToOrderData as any[]) {

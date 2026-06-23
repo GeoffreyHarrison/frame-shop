@@ -75,6 +75,17 @@ model Order {
   completed         Boolean   @default(false)
   completedDate     DateTime?
   binLocation       String?
+
+  // New status timestamp columns (part of 1.1 Order Status Tracking task)
+  receivedAt        DateTime?
+  verifiedAt        DateTime?
+  tabledAt          DateTime?
+  builtAt           DateTime?
+  completedAt       DateTime?
+  pickedUpAt        DateTime?
+  mustHaveStatus    DateTime?
+  delayedStatus     DateTime?
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

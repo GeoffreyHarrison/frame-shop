@@ -84,7 +84,7 @@ export interface Order {
   mounting: MountingType;
   notes: string;
 
-  // Status tracking
+  // Status tracking (legacy boolean fields kept for backward compatibility)
   delayed: boolean;
   verified: boolean;
   verifiedDate?: string;
@@ -96,6 +96,16 @@ export interface Order {
   frameReceivedDate?: string;
   completed: boolean;
   completedDate?: string;
+
+  // New status timestamp columns (task 1.1: Order Status Tracking)
+  receivedAt?: string | null;
+  verifiedAt?: string | null;
+  tabledAt?: string | null;
+  builtAt?: string | null;
+  completedAt?: string | null;
+  pickedUpAt?: string | null;
+  mustHaveStatus?: string | null;
+  delayedStatus?: string | null;
   binLocation?: string;
 
   // Comments

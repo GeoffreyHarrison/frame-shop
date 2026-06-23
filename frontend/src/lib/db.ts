@@ -53,6 +53,15 @@ function mapOrder(row: any): Order {
     frameReceivedDate: toDateStrOrUndefined(row.frameReceivedDate),
     completed: row.completed,
     completedDate: toDateStrOrUndefined(row.completedDate),
+    // New status timestamp columns (task 1.1)
+    receivedAt: row.receivedAt ? row.receivedAt.toISOString() : null,
+    verifiedAt: row.verifiedAt ? row.verifiedAt.toISOString() : null,
+    tabledAt: row.tabledAt ? row.tabledAt.toISOString() : null,
+    builtAt: row.builtAt ? row.builtAt.toISOString() : null,
+    completedAt: row.completedAt ? row.completedAt.toISOString() : null,
+    pickedUpAt: row.pickedUpAt ? row.pickedUpAt.toISOString() : null,
+    mustHaveStatus: row.mustHaveStatus ? row.mustHaveStatus.toISOString() : null,
+    delayedStatus: row.delayedStatus ? row.delayedStatus.toISOString() : null,
     binLocation: row.binLocation ?? undefined,
     comments: (row.comments ?? []).map((c: any) => ({
       id: c.id,
