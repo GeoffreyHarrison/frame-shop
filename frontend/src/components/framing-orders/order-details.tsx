@@ -108,12 +108,15 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             onChange={(e) => handleBinLocationChange(e.target.value)}
             placeholder=" "
             disabled={isUpdating}
-            className="w-10 bg-transparent border-b border-primary-dark/40 text-primary-dark text-base text-center focus:outline-none focus:border-primary-dark disabled:opacity-50"
+            style={{
+              width: binLocation.length > 0 ? `${Math.max(binLocation.length * 0.6 + 0.4, 1.5)}ch` : "1.5ch",
+            }}
+            className="bg-transparent border-b border-primary-dark/40 text-primary-dark text-base text-center focus:outline-none focus:border-primary-dark disabled:opacity-50 transition-all"
             title="Bin location"
           />
-          <span className="text-primary-dark/70 text-base -ml-3">)</span>
+          <span className="text-primary-dark/70 text-base">)</span>
 
-          <div className="no-print flex items-center gap-2">
+          <div className="no-print flex items-center gap-4">
             <StatusIconButton
               type="must"
               active={must}
