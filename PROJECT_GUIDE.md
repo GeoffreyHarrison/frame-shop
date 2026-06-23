@@ -62,13 +62,15 @@ frame-shop/
         │   ├── framing-orders/← tables & dialogs for orders
         │   ├── frames/        ← tables for the frame-ordering flow
         │   └── ui/            ← small shared bits (search-input)
+        ├── app/actions/       ← SERVER ACTIONS (button-click handlers that touch the database)
+        │   └── order-status.ts ← Update order status, bin location, etc.
         ├── lib/               ← LOGIC & HELPERS (no UI)
         │   ├── prisma.ts      ← Creates the database connection (used by db.ts)
         │   ├── db.ts          ← All database queries live here
         │   ├── types.ts       ← TypeScript shapes for Order, Customer, etc.
         │   ├── due-date.ts    ← Date formatting helpers
-        │   ├── order-statuses.ts ← Browser-storage logic for status buttons
-        │   └── vendor-orders.ts  ← Browser-storage logic for the Order button
+        │   ├── order-statuses.ts ← Browser-storage logic (legacy, being phased out)
+        │   └── vendor-orders.ts  ← Browser-storage logic (legacy, being phased out)
         ├── data/              ← Original dummy JSON (now only used to seed the DB)
         └── generated/prisma/  ← Auto-generated Prisma code (don't edit; not in git)
 ```
@@ -127,18 +129,27 @@ Example — `src/components/framing-orders/daily-detail-table.tsx` starts with `
 ### The pattern we use everywhere
 **Server component fetches data → passes it down as props → client component handles interaction.**
 
+For **reads** (getting data):
 ```
-Page (server)  ──fetches orders──▶  Table (client)  ──handles clicks──▶ browser storage
+Page (server)  ──fetches orders──▶  Table (client)  ──renders──▶  screen
 ```
 
-> **Rule of thumb:** If a file needs `onClick` / `useState`, it needs `"use client";`. If it needs the database, it must be a server component (no `"use client";`). They talk to each other through props.
+For **writes** (saving changes), we use **Server Actions** — functions marked `"use server"` that run on the server:
+```
+Button (client)  ──onclick calls──▶  Server Action  ──updates DB──▶  Page revalidates
+```
+
+A Server Action is like a mini API endpoint you write right in your app. No separate backend needed.
+
+> **Rule of thumb:** If a file needs `onClick` / `useState`, it needs `"use client";`. If it needs the database, it must be a server component (no `"use client";`) or a Server Action. They talk to each other through props and function calls.
 
 A subtle gotcha: data passed from a server component to a client component must be plain JSON-friendly values (strings, numbers, arrays, plain objects). That's why `db.ts` converts database `Date` objects into plain date strings before handing them to components.
 
 ---
 
-## 6. How Data Flows (from database to screen)
+## 6. How Data Flows (from database to screen and back)
 
+### Reading data (queries)
 ```
 PostgreSQL  →  prisma.ts  →  db.ts  →  page.tsx (server)  →  component (client)  →  screen
  (storage)    (connection)  (queries)   (fetches data)        (renders/interacts)
@@ -150,7 +161,21 @@ PostgreSQL  →  prisma.ts  →  db.ts  →  page.tsx (server)  →  component (
 4. The page passes the result as props into a **component**.
 5. The component renders it.
 
-**Want to change what data appears on a page?** Start in `db.ts`. **Want to change how it looks?** Go to the component.
+### Saving data (mutations via Server Actions)
+```
+Button click (client)  →  Server Action  →  prisma.ts  →  PostgreSQL
+                            (update DB)       (connection)  (storage)
+                                ↓
+                            revalidatePath()  ←  page re-fetches data
+```
+
+1. A client component has a button with `onClick={() => updateOrderStatus(...)}`
+2. `updateOrderStatus` is a Server Action (marked `"use server";` in `src/app/actions/order-status.ts`)
+3. The action calls `prisma.order.update(...)` to save changes
+4. The action calls `revalidatePath(...)` to tell Next.js "this data changed, fetch it fresh"
+5. The page re-fetches and the component updates automatically
+
+**Want to change what data appears on a page?** Start in `db.ts`. **Want to change how it looks?** Go to the component. **Want to save a button click to the database?** Write a Server Action in `src/app/actions/`.
 
 ---
 
@@ -229,29 +254,119 @@ Then open **http://localhost:3000** — the app auto-redirects to `/framing-orde
 ## 9. Current State & What's Left
 
 ### What's working
-- All pages read live from PostgreSQL.
-- Customers, orders, comments, and frames-to-order are seeded and queryable.
-- Navigation, layout, styling, and the order/frame views are built out.
+- ✅ All pages read live from PostgreSQL.
+- ✅ Customers, orders, comments, and frames-to-order are seeded and queryable.
+- ✅ Navigation, layout, styling, and the order/frame views are built out.
+- ✅ **Status buttons (verified / tabled / built / completed / must-have / delayed) now sync with the database via Server Actions.** These are no longer localStorage-only.
 
-### The one big thing still to migrate: writes
-Reading from the database is done. **Saving changes** is not — a few interactive features still store their state in the **browser's localStorage** instead of the database. This means those changes live only in *that one browser* and vanish if you clear browser data. They are:
+### Order Status Tracking (Task 1.1) — Recently Completed
+The major migration from localStorage to database has been done:
+- All status buttons on Daily Detail and Order Details pages now save to the database.
+- Order statuses are tracked as **timestamps** (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `mustHaveStatus`, `delayedStatus`, `pickedUpAt`).
+- Status changes trigger Server Actions in `src/app/actions/order-status.ts`.
+- Pages automatically revalidate when a status changes, so all devices see fresh data.
+- Bin location is now saved to the database as well.
 
-1. **Status buttons** (verified / tabled / built / completed / must-have / delayed) on the Daily Detail and Order Details pages — logic in `src/lib/order-statuses.ts`.
-2. **The "Order" button** on the Frame List, which drives the per-vendor order lists — logic in `src/lib/vendor-orders.ts`.
-3. **The due-date override** in the top bar — logic inside `src/components/layout/top-bar.tsx`.
+### Still to migrate: writes
+A couple of interactive features still use **browser localStorage**:
+
+1. **The "Order" button** on the Frame List, which drives the per-vendor order lists — logic in `src/lib/vendor-orders.ts`.
+2. **The due-date override** in the top bar — logic inside `src/components/layout/top-bar.tsx`.
+
+These could be migrated using the same Server Action pattern if persistence is needed.
 
 ### Recommended next steps (roughly in order)
-1. **Migrate writes to the database using Server Actions.** A Server Action is a Next.js feature that lets a button in a client component safely run code on the server (to update the DB) without you building a separate API. This would replace the localStorage logic in items 1 and 2 above so changes persist for everyone.
-2. **Build the Customer Directory and Vendor screens** (the top-bar buttons are placeholders today).
-3. **Add the remaining left-sidebar pages** (Orders to Verify, Orders to Table, etc.) — many can reuse the existing order-table components with different filters in `db.ts`.
+1. **Build the Customer Directory and Vendor screens** (the top-bar buttons are placeholders today).
+2. **Add the remaining left-sidebar pages** (Orders to Verify, Orders to Table, etc.) — many can reuse the existing order-table components with different filters in `db.ts`.
+3. **Complete the "Frames to Build" list page** — the query exists (`getOrdersReadyForFrameBuild()` in `order-status.ts`), but the page layout is still pending client direction.
 4. **Add authentication** so only shop staff can log in (before going live).
 5. **Sit down with the shop** to finalize the data fields (the schema is a first draft and expected to change).
 
-When you tackle item 1, the pattern is: write a function in a `actions.ts` file marked `"use server";`, call it from the button's `onClick`, and have it call `prisma.order.update(...)`. That's the natural follow-on to the read layer already in `db.ts`.
+---
+
+## 10. Action Workflows & Order Status Flow
+
+This section describes what happens when buttons are clicked and how orders move through different states in the system.
+
+### Order Status Buttons
+
+Each order can have the following statuses tracked as timestamps on the database:
+
+| Status | What it means | Button location | When to click |
+|--------|---------------|-----------------|---------------|
+| **Received** (`receivedAt`) | Frame arrived from vendor | Frame List (right column) | When the frame order arrives |
+| **Verified** (`verifiedAt`) | Order measurements double-checked | Order Details / Daily Detail | After confirming all specs are correct |
+| **Tabled** (`tabledAt`) | Mats cut and mounted | Order Details / Daily Detail | When mat work is complete |
+| **Built** (`builtAt`) | Frame assembled and glass installed | Order Details / Daily Detail | When frame is fully assembled |
+| **Completed** (`completedAt`) | Order ready for pickup | Order Details / Daily Detail | After final quality check, before pickup |
+| **Picked Up** (`pickedUpAt`) | Customer took the order | Order Details / Binventory | When customer comes to collect |
+| **Must Have** (`mustHaveStatus`) | Urgent/priority order | Order Details / Daily Detail | If marked as high-priority by customer |
+| **Delayed** (`delayedStatus`) | Order has delays | Order Details / Daily Detail | If issues arise |
+
+**How they work:**
+- Click a button to set the status (timestamp set to "now").
+- Click it again to clear the status (timestamp set to null).
+- Status is saved to PostgreSQL immediately via a Server Action.
+- All other devices see the change within seconds (page revalidates).
+- The **Progress** section on Order Details shows a timeline of when each milestone was reached.
+
+### Order Flow Lifecycle
+
+```
+Customer places order
+        ↓
+[Framing Orders] page shows order in "by due date" table
+        ↓
+Click eye icon → [Daily Detail] page
+        ↓
+Click [Verified] → confirms measurements
+        ↓
+Click [Tabled] → mats are ready
+        ↓
+Click [Built] → frame is assembled
+        ↓
+Click [Completed] → ready for pickup
+        ↓
+[Binventory] shows completed orders waiting for pickup
+        ↓
+Click [Picked Up] → order removed from bins
+```
+
+### Frame Ordering Workflow (Status: Partially implemented)
+
+| Step | Page | What happens | Status |
+|------|------|--------------|--------|
+| 1 | **Frame List** | Staff see frames that need ordering, grouped by vendor | ✅ Working |
+| 2 | **Frame List** | Click **Order** button on a frame → it moves to a vendor's order list | ⚠️ Uses localStorage (could be DB) |
+| 3 | **To Order lists** (right panel) | Staff see per-vendor lists of frames to order | ✅ Working |
+| 4 | **To Order lists** | Click **Ordered** button → frame is marked as sent to vendor | ⚠️ Uses localStorage |
+| 5 | **Frame List** | Click **Received** button → frame disappears from list (simulates vendor ship arrival) | ✅ Working |
+| 6 | **Frames to Build list** (future) | Staff see frames ready to use in jobs | ⏳ Page not yet built |
+
+### What's Implemented vs. What's Missing
+
+**✅ Implemented:**
+- Order status tracking (8 timestamps)
+- Status buttons save to database
+- Progress timeline on order details
+- Bin location tracking
+- Frame list with Order/Received buttons
+- Per-vendor order lists (view only)
+
+**⚠️ Partially working (uses localStorage):**
+- Frame "Order" button (marks frame as sent to vendor)
+
+**⏳ Not yet built:**
+- "Frames to Build" list page (customer frames that are verified & received, ready to assemble)
+- "Orders to Verify" list (filters orders by unverified status)
+- "Orders to Table" list (filters orders by untabled status)
+- Customer Directory
+- Vendor management screens
+- Due date override saving to database
 
 ---
 
-## 10. Making Common Changes (recipes)
+## 11. Making Common Changes (recipes)
 
 **Change the text or layout of a page:** edit the matching `page.tsx` in `src/app/`, or the component it renders in `src/components/`.
 
@@ -265,9 +380,46 @@ When you tackle item 1, the pattern is: write a function in a `actions.ts` file 
 
 **Add an icon:** import it from `lucide-react` (browse names at lucide.dev) and drop it in like `<Calendar size={18} />`.
 
+**Save a button click to the database:** This is the Server Action pattern. Example: add a "Flag as important" button that sets a boolean in the database.
+
+1. **Create a Server Action** in `src/app/actions/some-action.ts`:
+   ```tsx
+   "use server"
+   
+   import { prisma } from "@/lib/prisma"
+   import { revalidatePath } from "next/cache"
+   
+   export async function flagOrderAsImportant(orderId: string) {
+     await prisma.order.update({
+       where: { id: orderId },
+       data: { flagged: true },
+     })
+     revalidatePath("/framing-orders")  // refresh the page
+   }
+   ```
+
+2. **Import and call it from a client component:**
+   ```tsx
+   "use client"
+   
+   import { flagOrderAsImportant } from "@/app/actions/some-action"
+   
+   export function OrderRow({ order }) {
+     return (
+       <button onClick={() => flagOrderAsImportant(order.id)}>
+         Flag
+       </button>
+     )
+   }
+   ```
+
+3. **Show the value in your component or page** by reading it from the database (as you already do with other fields).
+
+That's it — button clicks → Server Action → database update → page refresh → UI shows new state. No separate API needed.
+
 ---
 
-## 11. Deploying & Hosting on Vercel
+## 12. Deploying & Hosting on Vercel
 
 Vercel is the company that makes Next.js, so deployment is about as smooth as it gets. The catch for us: **Vercel hosts the app, but not the database.** PostgreSQL needs to live somewhere too. The plan below covers both.
 
@@ -340,7 +492,7 @@ This runs `prisma generate` every time Vercel installs dependencies, ensuring th
 
 ---
 
-## 12. Quick Reference — "Where do I go to…?"
+## 13. Quick Reference — "Where do I go to…?"
 
 | I want to… | Go to… |
 |------------|--------|
