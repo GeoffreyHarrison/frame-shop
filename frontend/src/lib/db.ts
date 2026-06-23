@@ -189,3 +189,16 @@ export async function getOrderedFramesForVendor(
 
   return rows.map(mapFrameToOrder);
 }
+
+export async function getOrdersWaitingForPickup(): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    where: {
+      completedAt: { not: null },
+      pickedUpAt: null,
+    },
+    include: { customer: true, comments: true },
+    orderBy: { dueDate: "asc" },
+  });
+
+  return rows.map(mapOrder);
+}
