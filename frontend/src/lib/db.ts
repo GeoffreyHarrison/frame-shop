@@ -64,6 +64,7 @@ function mapOrder(row: any): Order {
     mustHaveStatus: toDateStrOrUndefined(row.mustHaveStatus),
     delayedStatus: toDateStrOrUndefined(row.delayedStatus),
     binLocation: row.binLocation ?? undefined,
+    orderCreatedAt: toDateStr(row.orderCreatedAt),
     comments: (row.comments ?? []).map((c: any) => ({
       id: c.id,
       author: c.author,
@@ -199,6 +200,46 @@ export async function getOrdersWaitingForPickup(): Promise<Order[]> {
     },
     include: { customer: true, comments: true },
     orderBy: { dueDate: "asc" },
+  });
+
+  return rows.map(mapOrder);
+}
+
+// Daily Summaries queries
+export async function getOrdersCreatedOnDate(date: string): Promise<Order[]> {
+  const dayStart = new Date(`${date}T00:00:00.000Z`);
+  const dayEnd = new Date(`${date}T23:59:59.999Z`);
+
+  const rows = await prisma.order.findMany({
+    where: { orderCreatedAt: { gte: dayStart, lte: dayEnd } },
+    include: { customer: true, comments: true },
+    orderBy: { orderNumber: "asc" },
+  });
+
+  return rows.map(mapOrder);
+}
+
+export async function getOrdersCompletedOnDate(date: string): Promise<Order[]> {
+  const dayStart = new Date(`${date}T00:00:00.000Z`);
+  const dayEnd = new Date(`${date}T23:59:59.999Z`);
+
+  const rows = await prisma.order.findMany({
+    where: { completedAt: { gte: dayStart, lte: dayEnd } },
+    include: { customer: true, comments: true },
+    orderBy: { orderNumber: "asc" },
+  });
+
+  return rows.map(mapOrder);
+}
+
+export async function getOrdersPickedUpOnDate(date: string): Promise<Order[]> {
+  const dayStart = new Date(`${date}T00:00:00.000Z`);
+  const dayEnd = new Date(`${date}T23:59:59.999Z`);
+
+  const rows = await prisma.order.findMany({
+    where: { pickedUpAt: { gte: dayStart, lte: dayEnd } },
+    include: { customer: true, comments: true },
+    orderBy: { orderNumber: "asc" },
   });
 
   return rows.map(mapOrder);

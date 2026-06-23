@@ -342,3 +342,14 @@ These items came up during development and should be addressed in future iterati
 
 4. **Bin location workflow decision** — Confirmed that bin can be entered at ANY point in workflow, not just when order is completed.
    - **Status:** ✅ Resolved (updated in Task 4.2)
+
+# My Answers
+1. The page should default to the current date. When you pick a different date, it should show data for that newly selected date. When you leave and come back to the page it should go back to the current date's view.
+2. These will be the top level KPIs
+  - Orders Taken: Orders that were created that day by a staffer (using new order feature which we will work on later, will need to have an orderCreatedAt timestamp column for the order)
+  - Orders Completed: all orders with completedAt timestamp for the selected date
+  - Orders Picked Up - all orders with pickedUpAt timestamp for the selected date
+  - Lets ignore pending for now.
+3. The tables should list the corresponding orders to KPI boxes at the top. They should include order number, order quantity, customer name, and due date for now. The top of the table should be the navy blue header that list the status (Orders Taken:, Orders Completed:, Orders Picked Up:) and have the tables styled similarly to Binventory and Frame List.
+4. Lets ignore the mismatched status orders for now.
+  

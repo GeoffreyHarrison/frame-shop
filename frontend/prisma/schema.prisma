@@ -86,6 +86,9 @@ model Order {
   mustHaveStatus    DateTime?
   delayedStatus     DateTime?
 
+  // Order creation timestamp (for Daily Summaries "Orders Taken" KPI)
+  orderCreatedAt    DateTime  @default(now())
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
