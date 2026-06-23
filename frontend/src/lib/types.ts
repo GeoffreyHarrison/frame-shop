@@ -108,7 +108,7 @@ export interface Order {
   mustHaveStatus?: string | null;
   delayedStatus?: string | null;
   binLocation?: string;
-  orderCreatedAt?: string;
+  orderCreatedAt?: string | undefined;
 
   // Comments
   comments: OrderComment[];

@@ -64,7 +64,7 @@ function mapOrder(row: any): Order {
     mustHaveStatus: toDateStrOrUndefined(row.mustHaveStatus),
     delayedStatus: toDateStrOrUndefined(row.delayedStatus),
     binLocation: row.binLocation ?? undefined,
-    orderCreatedAt: toDateStr(row.orderCreatedAt),
+    orderCreatedAt: toDateStrOrUndefined(row.orderCreatedAt),
     comments: (row.comments ?? []).map((c: any) => ({
       id: c.id,
       author: c.author,
