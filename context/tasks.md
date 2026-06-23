@@ -253,14 +253,29 @@ List of regular supplies sorted by team-defined parameters. Include order button
 
 ---
 
-### 4.2 Bin Number Location Fix
-**Priority:** Low
+### 4.2 Bin Location Input (COMPLETE)
+**Status:** ✅ Complete
 **Description:**
-Bin number field (parentheses next to customer name on Order Details) doesn't look good. Redesign placement for better visual balance.
+Bin location field styling and persistence have been fully implemented and tested.
 
-**Acceptance Criteria:**
-- Bin number field is visually integrated and doesn't look awkward
-- User can still add/edit bin letter
+**What was fixed:**
+1. **Visual appearance:** 
+   - Removed unwanted gap between parentheses and input field
+   - Fixed width calculation to properly expand with content (1ch per character)
+   - No character cutoff at any length
+   
+2. **Data persistence:**
+   - Bin location now saves to database immediately when value is entered
+   - Previously only saved if order was completed — now saves at any point in workflow
+   - Data persists across navigation and page reloads
+
+**Acceptance Criteria:** ✅
+- ✅ Bin location field visually integrated and clean appearance
+- ✅ User can add/edit bin letter at any time
+- ✅ Input properly expands as content grows
+- ✅ All characters remain visible (no cutoff)
+- ✅ Value persists to database when navigating away
+- ✅ Value persists when returning to order details page
 
 ---
 
@@ -309,32 +324,21 @@ Planning documents are created for complex tasks to break down implementation st
 - **Task 1.1:** `context/planning/order_status_tracking.md` — Schema changes, Server Actions, UI updates, migration strategy
 
 
-## Task Intake
-1. On order page, when there is no Frame Received date it currently says Invalid Date. I want to eventually update this so that it shows the following:
-  - When order is created the frame goes to the Frame List linked on right panel - when that happens and neither Order nor Received have been clicked, it should say Frame Received: Frame not ordered
-  - When frame for order has been ordered but not received it should say "Frame Received: Frame ordered but not received"
-  - When received button has been clicked it should do as it currently does and list the receivedAt date
+## Backlog & Known Issues
+These items came up during development and should be addressed in future iterations.
 
-2. On order detailes page I want the elements in the main panel, the different rectangle divs with the blue borders, to stretch further over to the right side of the panel. The spacing between those divs and the sides of the panel should be the same from the right side as it is for the left.
+1. **Frame Received status display** — When there is no Frame Received date, show contextual message:
+   - "Frame not ordered" — when order created but frame not yet ordered
+   - "Frame ordered but not received" — when order placed with vendor but not arrived
+   - Show date when order received
+   - **Status:** Not yet implemented
 
-3. Need to make sure comments are written to database with timestamp and staffer who commented.
+2. **Order Details panel width** — Increase width of section containers to better use right side space.
+   - Currently constrained; should match left-side padding on right side too.
+   - **Status:** Not yet implemented
 
-4. None of the dates are showing up in the app since moving to database. 
+3. **Comments with author & timestamp** — Comments should include both the author and creation timestamp in the database.
+   - **Status:** Partially implemented (timestamps exist, need author capture in UI)
 
-
-Geoffrey Harrison:
-	Quick question. Are all the bins labeled as single capital letters? And if so how far into the alphabet do they go?
-
-Jeff Ballance:
-	Welll mostly! So they go A-L then we have P, P-2, P-4, Pcounter, Pwall, Wall, Nook, Cranny
-
-  Bins:
-  - Letters A through L
-  - P
-  - P-2
-  - P-4
-  - Pcounter
-  - Pwall
-  - Wall
-  - Nook
-  - Cranny
+4. **Bin location workflow decision** — Confirmed that bin can be entered at ANY point in workflow, not just when order is completed.
+   - **Status:** ✅ Resolved (updated in Task 4.2)

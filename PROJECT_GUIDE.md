@@ -265,7 +265,7 @@ The major migration from localStorage to database has been done:
 - Order statuses are tracked as **timestamps** (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `mustHaveStatus`, `delayedStatus`, `pickedUpAt`).
 - Status changes trigger Server Actions in `src/app/actions/order-status.ts`.
 - Pages automatically revalidate when a status changes, so all devices see fresh data.
-- Bin location is now saved to the database as well.
+- **Bin location** is now fully functional: saved to database immediately on input, can be entered at any point in order workflow, persists across navigation.
 
 ### Still to migrate: writes
 A couple of interactive features still use **browser localStorage**:
@@ -346,12 +346,13 @@ Click [Picked Up] → order removed from bins
 ### What's Implemented vs. What's Missing
 
 **✅ Implemented:**
-- Order status tracking (8 timestamps)
-- Status buttons save to database
+- Order status tracking (8 timestamps) — all save to database with immediate persistence
+- Status buttons on Daily Detail and Order Details pages
 - Progress timeline on order details
-- Bin location tracking
+- Bin location tracking — fully functional with persistent database storage
 - Frame list with Order/Received buttons
 - Per-vendor order lists (view only)
+- Binventory page with sorting, filtering, and pickup workflow
 
 **⚠️ Partially working (uses localStorage):**
 - Frame "Order" button (marks frame as sent to vendor)
