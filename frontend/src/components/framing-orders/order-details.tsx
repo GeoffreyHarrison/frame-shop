@@ -101,20 +101,20 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             {customer.firstName} {customer.lastName}
           </span>
           {/* Bin location */}
-          <span className="text-primary-dark/70 text-base">(</span>
-          <input
-            type="text"
-            value={binLocation}
-            onChange={(e) => handleBinLocationChange(e.target.value)}
-            placeholder=" "
-            disabled={isUpdating}
-            style={{
-              width: binLocation.length > 0 ? `${Math.max(binLocation.length * 0.6 + 0.4, 1.5)}ch` : "1.5ch",
-            }}
-            className="bg-transparent border-b border-primary-dark/40 text-primary-dark text-base text-center focus:outline-none focus:border-primary-dark disabled:opacity-50 transition-all"
-            title="Bin location"
-          />
-          <span className="text-primary-dark/70 text-base">)</span>
+          <div className="flex items-center">
+            <span className="text-primary-dark/70 text-base">(<input
+              type="text"
+              value={binLocation}
+              onChange={(e) => handleBinLocationChange(e.target.value)}
+              placeholder=" "
+              disabled={isUpdating}
+              style={{
+                width: `${Math.max((binLocation.length || 1) + 0.5, 1.5)}ch`,
+              }}
+              className="bg-transparent border-b border-primary-dark/40 text-primary-dark text-base text-center focus:outline-none focus:border-primary-dark disabled:opacity-50 transition-all"
+              title="Bin location"
+            />)</span>
+          </div>
 
           <div className="no-print flex items-center gap-4">
             <StatusIconButton
