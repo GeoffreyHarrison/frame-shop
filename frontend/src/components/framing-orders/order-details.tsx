@@ -1,19 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { StatusIconButton } from "./status-icon-button";
 import { CommentDialog } from "./comment-dialog";
 import { Download } from "lucide-react";
 import type { Order, Customer } from "@/lib/types";
 import { formatDate } from "@/lib/due-date";
 import {
-  loadOrderStatuses,
-  saveOrderStatuses,
-  toggleOrderStatus,
-  resolveStatus,
-  resolveDate,
-  type OrderStatusRecord,
-} from "@/lib/order-statuses";
+  updateOrderStatus,
+  clearOrderStatus,
+  updateBinLocation,
+} from "@/app/actions/order-status";
 
 interface OrderDetailsProps {
   order: Order;
@@ -25,34 +22,60 @@ const BADGE_SIZE = 30;
 
 export function OrderDetails({ order, customer }: OrderDetailsProps) {
   const [binLocation, setBinLocation] = useState(order.binLocation ?? "");
-  const [allStatuses, setAllStatuses] = useState<Record<string, OrderStatusRecord>>({});
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
-    setAllStatuses(loadOrderStatuses());
-    const onUpdate = () => setAllStatuses(loadOrderStatuses());
-    window.addEventListener("orderStatusUpdated", onUpdate);
-    return () => window.removeEventListener("orderStatusUpdated", onUpdate);
-  }, []);
+  const handleStatusToggle = async (status: string) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const statusMap: Record<string, 'verified' | 'tabled' | 'built' | 'completed' | 'mustHave' | 'delayed'> = {
+        verified: 'verified',
+        tabled: 'tabled',
+        built: 'built',
+        completed: 'completed',
+        must: 'mustHave',
+        delayed: 'delayed',
+      };
 
-  const toggle = (field: Parameters<typeof toggleOrderStatus>[2]) => {
-    setAllStatuses((prev) => {
-      const next = toggleOrderStatus(prev, order.id, field);
-      saveOrderStatuses(next);
-      return next;
-    });
+      const statusType = statusMap[status];
+      if (!statusType) return;
+
+      // Check if status is already set based on timestamp
+      const isActive = Boolean(
+        status === 'verified' ? order.verifiedAt :
+        status === 'tabled' ? order.tabledAt :
+        status === 'built' ? order.builtAt :
+        status === 'completed' ? order.completedAt :
+        status === 'must' ? order.mustHaveStatus :
+        status === 'delayed' ? order.delayedStatus :
+        false
+      );
+
+      if (isActive) {
+        await clearOrderStatus(order.id, statusType);
+      } else {
+        await updateOrderStatus(order.id, statusType);
+      }
+      // Page will revalidate automatically from Server Action
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const must = resolveStatus(order.id, "must", order.must, allStatuses);
-  const delayed = resolveStatus(order.id, "delayed", order.delayed, allStatuses);
-  const verified = resolveStatus(order.id, "verified", order.verified, allStatuses);
-  const tabled = resolveStatus(order.id, "tabled", order.tabled, allStatuses);
-  const built = resolveStatus(order.id, "built", order.frameBuilt, allStatuses);
-  const completed = resolveStatus(order.id, "completed", order.completed, allStatuses);
+  const handleBinLocationChange = async (value: string) => {
+    setBinLocation(value);
+    if (value.trim() && order.completedAt) {
+      await updateBinLocation(order.id, value.trim());
+    }
+  };
 
-  const verifiedDate = resolveDate(order.id, "verifiedDate", order.verifiedDate, allStatuses);
-  const tabledDate = resolveDate(order.id, "tabledDate", order.tabledDate, allStatuses);
-  const builtDate = resolveDate(order.id, "builtDate", order.frameBuiltDate, allStatuses);
-  const completedDate = resolveDate(order.id, "completedDate", order.completedDate, allStatuses);
+  // Status indicators based on database timestamps
+  const verified = Boolean(order.verifiedAt);
+  const tabled = Boolean(order.tabledAt);
+  const built = Boolean(order.builtAt);
+  const completed = Boolean(order.completedAt);
+  const must = Boolean(order.mustHaveStatus);
+  const delayed = Boolean(order.delayedStatus);
 
   return (
     <div className="space-y-4 max-w-3xl">
@@ -67,9 +90,10 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
           <input
             type="text"
             value={binLocation}
-            onChange={(e) => setBinLocation(e.target.value)}
+            onChange={(e) => handleBinLocationChange(e.target.value)}
             placeholder=" "
-            className="w-10 bg-transparent border-b border-primary-dark/40 text-primary-dark text-base text-center focus:outline-none focus:border-primary-dark"
+            disabled={isUpdating}
+            className="w-10 bg-transparent border-b border-primary-dark/40 text-primary-dark text-base text-center focus:outline-none focus:border-primary-dark disabled:opacity-50"
             title="Bin location"
           />
           <span className="text-primary-dark/70 text-base -ml-3">)</span>
@@ -78,13 +102,13 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             <StatusIconButton
               type="must"
               active={must}
-              onClick={() => toggle("must")}
+              onClick={() => handleStatusToggle("must")}
               size={CIRCLE_SIZE}
             />
             <StatusIconButton
               type="delayed"
               active={delayed}
-              onClick={() => toggle("delayed")}
+              onClick={() => handleStatusToggle("delayed")}
               size={CIRCLE_SIZE}
             />
             <CommentDialog
@@ -134,25 +158,25 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             <StatusIconButton
               type="verified"
               active={verified}
-              onClick={() => toggle("verified")}
+              onClick={() => handleStatusToggle("verified")}
               size={BADGE_SIZE}
             />
             <StatusIconButton
               type="tabled"
               active={tabled}
-              onClick={() => toggle("tabled")}
+              onClick={() => handleStatusToggle("tabled")}
               size={BADGE_SIZE}
             />
             <StatusIconButton
               type="built"
               active={built}
-              onClick={() => toggle("built")}
+              onClick={() => handleStatusToggle("built")}
               size={BADGE_SIZE}
             />
             <StatusIconButton
               type="completed"
               active={completed}
-              onClick={() => toggle("completed")}
+              onClick={() => handleStatusToggle("completed")}
               size={BADGE_SIZE}
             />
           </div>
@@ -224,7 +248,7 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
         )}
       </div>
 
-      {/* Section 5: Progress — display-only circles with dates from localStorage */}
+      {/* Section 5: Progress — display-only circles with dates from database timestamps */}
       <div className="bg-white rounded-xl p-5 shadow-sm">
         <span className="text-sm font-bold text-primary-dark block mb-4">Progress:</span>
         <div className="grid grid-cols-2 gap-y-4 gap-x-8">
@@ -232,8 +256,8 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             <StatusIconButton type="verified" active={verified} size={BADGE_SIZE} indicatorOnly />
             <div>
               <span className="text-sm text-primary-dark block">Verified</span>
-              {verifiedDate && (
-                <span className="text-xs text-primary/50">{formatDate(verifiedDate)}</span>
+              {order.verifiedAt && (
+                <span className="text-xs text-primary/50">{formatDate(order.verifiedAt)}</span>
               )}
             </div>
           </div>
@@ -241,8 +265,8 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             <StatusIconButton type="built" active={built} size={BADGE_SIZE} indicatorOnly />
             <div>
               <span className="text-sm text-primary-dark block">Frame Built</span>
-              {builtDate && (
-                <span className="text-xs text-primary/50">{formatDate(builtDate)}</span>
+              {order.builtAt && (
+                <span className="text-xs text-primary/50">{formatDate(order.builtAt)}</span>
               )}
             </div>
           </div>
@@ -250,8 +274,8 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             <StatusIconButton type="tabled" active={tabled} size={BADGE_SIZE} indicatorOnly />
             <div>
               <span className="text-sm text-primary-dark block">Tabled</span>
-              {tabledDate && (
-                <span className="text-xs text-primary/50">{formatDate(tabledDate)}</span>
+              {order.tabledAt && (
+                <span className="text-xs text-primary/50">{formatDate(order.tabledAt)}</span>
               )}
             </div>
           </div>
@@ -259,17 +283,17 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             <StatusIconButton type="completed" active={completed} size={BADGE_SIZE} indicatorOnly />
             <div>
               <span className="text-sm text-primary-dark block">Completed</span>
-              {completedDate && (
-                <span className="text-xs text-primary/50">{formatDate(completedDate)}</span>
+              {order.completedAt && (
+                <span className="text-xs text-primary/50">{formatDate(order.completedAt)}</span>
               )}
             </div>
           </div>
         </div>
-        {order.frameReceivedDate && (
+        {order.receivedAt && (
           <div className="mt-4 pt-3 border-t border-warm-border">
             <span className="text-sm text-primary-dark">
               <span className="font-bold">Frame Received:</span>{" "}
-              {formatDate(order.frameReceivedDate)}
+              {formatDate(order.receivedAt)}
             </span>
           </div>
         )}
