@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { StatusIconButton } from "./status-icon-button";
 import { CommentDialog } from "./comment-dialog";
 import type { Order } from "@/lib/types";
 import {
-  loadOrderStatuses,
-  saveOrderStatuses,
-  toggleOrderStatus,
-  resolveStatus,
-  resolveDate,
-  type OrderStatusRecord,
-} from "@/lib/order-statuses";
+  updateOrderStatus,
+  clearOrderStatus,
+} from "@/app/actions/order-status";
 
 interface DailyDetailTableProps {
   orders: Order[];
@@ -25,24 +21,46 @@ const BADGE_SIZE = 34;
 const EYE_SIZE = 38;
 
 export function DailyDetailTable({ orders, date }: DailyDetailTableProps) {
-  const [allStatuses, setAllStatuses] = useState<Record<string, OrderStatusRecord>>({});
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
-    setAllStatuses(loadOrderStatuses());
-    const onUpdate = () => setAllStatuses(loadOrderStatuses());
-    window.addEventListener("orderStatusUpdated", onUpdate);
-    return () => window.removeEventListener("orderStatusUpdated", onUpdate);
-  }, []);
+  const handleStatusToggle = async (orderId: string, status: string) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const statusMap: Record<string, 'verified' | 'tabled' | 'built' | 'completed' | 'mustHave' | 'delayed'> = {
+        verified: 'verified',
+        tabled: 'tabled',
+        built: 'built',
+        completed: 'completed',
+        must: 'mustHave',
+        delayed: 'delayed',
+      };
 
-  const toggle = (
-    orderId: string,
-    field: Parameters<typeof toggleOrderStatus>[2]
-  ) => {
-    setAllStatuses((prev) => {
-      const next = toggleOrderStatus(prev, orderId, field);
-      saveOrderStatuses(next);
-      return next;
-    });
+      const statusType = statusMap[status];
+      if (!statusType) return;
+
+      // Check if status is already set based on timestamp
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const isActive = Boolean(
+        status === 'verified' ? order.verifiedAt :
+        status === 'tabled' ? order.tabledAt :
+        status === 'built' ? order.builtAt :
+        status === 'completed' ? order.completedAt :
+        status === 'must' ? order.mustHaveStatus :
+        status === 'delayed' ? order.delayedStatus :
+        false
+      );
+
+      if (isActive) {
+        await clearOrderStatus(orderId, statusType);
+      } else {
+        await updateOrderStatus(orderId, statusType);
+      }
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -54,12 +72,12 @@ export function DailyDetailTable({ orders, date }: DailyDetailTableProps) {
       ) : (
         <div>
           {orders.map((order, idx) => {
-            const must = resolveStatus(order.id, "must", order.must, allStatuses);
-            const delayed = resolveStatus(order.id, "delayed", order.delayed, allStatuses);
-            const verified = resolveStatus(order.id, "verified", order.verified, allStatuses);
-            const tabled = resolveStatus(order.id, "tabled", order.tabled, allStatuses);
-            const built = resolveStatus(order.id, "built", order.frameBuilt, allStatuses);
-            const completed = resolveStatus(order.id, "completed", order.completed, allStatuses);
+            const must = Boolean(order.mustHaveStatus);
+            const delayed = Boolean(order.delayedStatus);
+            const verified = Boolean(order.verifiedAt);
+            const tabled = Boolean(order.tabledAt);
+            const built = Boolean(order.builtAt);
+            const completed = Boolean(order.completedAt);
 
             return (
               <div
@@ -90,13 +108,13 @@ export function DailyDetailTable({ orders, date }: DailyDetailTableProps) {
                     <StatusIconButton
                       type="must"
                       active={must}
-                      onClick={() => toggle(order.id, "must")}
+                      onClick={() => handleStatusToggle(order.id, "must")}
                       size={CIRCLE_SIZE}
                     />
                     <StatusIconButton
                       type="delayed"
                       active={delayed}
-                      onClick={() => toggle(order.id, "delayed")}
+                      onClick={() => handleStatusToggle(order.id, "delayed")}
                       size={CIRCLE_SIZE}
                     />
                     <CommentDialog
@@ -123,25 +141,25 @@ export function DailyDetailTable({ orders, date }: DailyDetailTableProps) {
                   <StatusIconButton
                     type="verified"
                     active={verified}
-                    onClick={() => toggle(order.id, "verified")}
+                    onClick={() => handleStatusToggle(order.id, "verified")}
                     size={BADGE_SIZE}
                   />
                   <StatusIconButton
                     type="tabled"
                     active={tabled}
-                    onClick={() => toggle(order.id, "tabled")}
+                    onClick={() => handleStatusToggle(order.id, "tabled")}
                     size={BADGE_SIZE}
                   />
                   <StatusIconButton
                     type="built"
                     active={built}
-                    onClick={() => toggle(order.id, "built")}
+                    onClick={() => handleStatusToggle(order.id, "built")}
                     size={BADGE_SIZE}
                   />
                   <StatusIconButton
                     type="completed"
                     active={completed}
-                    onClick={() => toggle(order.id, "completed")}
+                    onClick={() => handleStatusToggle(order.id, "completed")}
                     size={BADGE_SIZE}
                   />
                 </div>
