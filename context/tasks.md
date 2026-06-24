@@ -116,13 +116,6 @@ List of regular supplies sorted by team-defined parameters. Include order button
 
 ## Phase 4: Minor UI Fixes & Text Updates
 
-### 4.1 Button Label Changes
-**Priority:** Low
-**Tasks:**
-- Frame List: when "Order" button is pressed, should say still say "Order" instead of ordered. All styling stays the same
-- "To Order:" lists: Add button called "Ordered" for each row that looks and behaves like "Order" button on Frame List, but this one is what populates FrameToOrder table orderedDate
-- "To Order:" lists: Add "Remove" button to right of "Ordered" button on each row
-
 ---
 
 ## Audit & Cleanup
@@ -167,6 +160,7 @@ Items that came up during development and should be addressed in future iteratio
 | 2.3 | Binventory Page | Built `/binventory` page showing completed-but-not-picked-up orders. Table with Bin, Order #, Qty, Customer Name, Contact, Due Date, and Picked Up button. Sort options (bin, due date, order #, customer name, asc/desc). |
 | 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
 | 2.2 | All Orders Page | Built `/all-orders` page with 11 KPI boxes in a 4-4-3 grid. Clicking a KPI filters the table below. Each KPI has its own filter logic and specific extra columns. Table is horizontally scrollable for wide views like "All". Also: moved frame received tracking from `Order.receivedAt` to `FrameToOrder.receivedDate`; added `frameStatus`, `frameOrderedDate`, `frameReceivedDate` fields to Order interface sourced from FrameToOrder relation. |
+| 4.1 | Button Label Changes | Frame List: "Order" button text no longer changes to "Ordered" when clicked. To Order lists: added "Ordered" button per row (writes `FrameToOrder.orderedDate` to DB via Server Action, navy fill when set) and "Remove" button per row (resets frame to "On List", clears `orderedDate`). Both buttons hidden from print. |
 
 ---
 
