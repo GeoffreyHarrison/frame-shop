@@ -99,7 +99,6 @@ export interface Order {
   completedDate?: string;
 
   // New status timestamp columns (task 1.1: Order Status Tracking)
-  receivedAt?: string | null;
   verifiedAt?: string | null;
   tabledAt?: string | null;
   builtAt?: string | null;
@@ -109,6 +108,7 @@ export interface Order {
   delayedStatus?: string | null;
   binLocation?: string;
   orderCreatedAt?: string | undefined;
+  frameReceivedDate?: string; // from FrameToOrder.receivedDate
 
   // Comments
   comments: OrderComment[];
@@ -141,5 +141,5 @@ export interface FrameToOrder {
   vendor: string;
   status: "On List" | "Ordered" | "Received";
   orderedDate?: string;
-  receivedDate?: string;
+  receivedDate?: string; // when frame arrived from vendor
 }

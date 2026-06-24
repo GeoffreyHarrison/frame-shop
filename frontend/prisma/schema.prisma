@@ -77,7 +77,6 @@ model Order {
   binLocation       String?
 
   // New status timestamp columns (part of 1.1 Order Status Tracking task)
-  receivedAt        DateTime?
   verifiedAt        DateTime?
   tabledAt          DateTime?
   builtAt           DateTime?
@@ -115,8 +114,9 @@ model FrameToOrder {
   size        String
   qty         Int
   vendor      String
-  status      String    @default("On List")
-  orderedDate DateTime?
-  createdAt   DateTime  @default(now())
+  status       String    @default("On List")
+  orderedDate  DateTime?
+  receivedDate DateTime?
+  createdAt    DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

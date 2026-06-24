@@ -55,7 +55,6 @@ function mapOrder(row: any): Order {
     completed: row.completed,
     completedDate: toDateStrOrUndefined(row.completedDate),
     // New status timestamp columns (task 1.1)
-    receivedAt: toDateStrOrUndefined(row.receivedAt),
     verifiedAt: toDateStrOrUndefined(row.verifiedAt),
     tabledAt: toDateStrOrUndefined(row.tabledAt),
     builtAt: toDateStrOrUndefined(row.builtAt),
@@ -65,6 +64,8 @@ function mapOrder(row: any): Order {
     delayedStatus: toDateStrOrUndefined(row.delayedStatus),
     binLocation: row.binLocation ?? undefined,
     orderCreatedAt: toDateStrOrUndefined(row.orderCreatedAt),
+    // Frame received date comes from FrameToOrder, not Order
+    frameReceivedDate: toDateStrOrUndefined(row.frameToOrder?.receivedDate),
     comments: (row.comments ?? []).map((c: any) => ({
       id: c.id,
       author: c.author,
@@ -121,7 +122,7 @@ function mapFrameToOrder(row: any): FrameToOrder {
 export async function getOrdersByDay(): Promise<OrdersByDay[]> {
   const rows = await prisma.order.findMany({
     orderBy: { dueDate: "asc" },
-    include: { comments: true },
+    include: { comments: true, frameToOrder: true },
   });
 
   const grouped = new Map<string, any[]>();
@@ -151,7 +152,7 @@ export async function getOrdersForDate(date: string): Promise<Order[]> {
 
   const rows = await prisma.order.findMany({
     where: { dueDate: { gte: dayStart, lte: dayEnd } },
-    include: { customer: true, comments: true },
+    include: { customer: true, comments: true, frameToOrder: true },
     orderBy: { orderNumber: "asc" },
   });
 
@@ -163,7 +164,7 @@ export async function getOrderWithCustomer(
 ): Promise<{ order: Order; customer: Customer } | null> {
   const row = await prisma.order.findUnique({
     where: { id },
-    include: { customer: true, comments: true },
+    include: { customer: true, comments: true, frameToOrder: true },
   });
 
   if (!row) return null;
@@ -198,7 +199,7 @@ export async function getOrdersWaitingForPickup(): Promise<Order[]> {
       completedAt: { not: null },
       pickedUpAt: null,
     },
-    include: { customer: true, comments: true },
+    include: { customer: true, comments: true, frameToOrder: true },
     orderBy: { dueDate: "asc" },
   });
 
@@ -212,7 +213,7 @@ export async function getOrdersCreatedOnDate(date: string): Promise<Order[]> {
 
   const rows = await prisma.order.findMany({
     where: { orderCreatedAt: { gte: dayStart, lte: dayEnd } },
-    include: { customer: true, comments: true },
+    include: { customer: true, comments: true, frameToOrder: true },
     orderBy: { orderNumber: "asc" },
   });
 
@@ -225,7 +226,7 @@ export async function getOrdersCompletedOnDate(date: string): Promise<Order[]> {
 
   const rows = await prisma.order.findMany({
     where: { completedAt: { gte: dayStart, lte: dayEnd } },
-    include: { customer: true, comments: true },
+    include: { customer: true, comments: true, frameToOrder: true },
     orderBy: { orderNumber: "asc" },
   });
 
@@ -238,7 +239,7 @@ export async function getOrdersPickedUpOnDate(date: string): Promise<Order[]> {
 
   const rows = await prisma.order.findMany({
     where: { pickedUpAt: { gte: dayStart, lte: dayEnd } },
-    include: { customer: true, comments: true },
+    include: { customer: true, comments: true, frameToOrder: true },
     orderBy: { orderNumber: "asc" },
   });
 

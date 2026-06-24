@@ -3,10 +3,9 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-type StatusType = 'received' | 'verified' | 'tabled' | 'built' | 'completed' | 'pickedUp' | 'mustHave' | 'delayed'
+type StatusType = 'verified' | 'tabled' | 'built' | 'completed' | 'pickedUp' | 'mustHave' | 'delayed'
 
 const statusFieldMap: Record<StatusType, string> = {
-  received: 'receivedAt',
   verified: 'verifiedAt',
   tabled: 'tabledAt',
   built: 'builtAt',
@@ -57,13 +56,16 @@ export async function clearOrderStatus(orderId: string, status: StatusType) {
 }
 
 export async function getOrdersReadyForFrameBuild() {
+  // Ready to build = frame received (FrameToOrder.receivedDate set) AND verified, but not yet built
   return await prisma.order.findMany({
     where: {
-      receivedAt: { not: null },
       verifiedAt: { not: null },
-      builtAt: null, // not yet built
+      builtAt: null,
+      frameToOrder: {
+        receivedDate: { not: null },
+      },
     },
-    include: { customer: true },
+    include: { customer: true, frameToOrder: true },
     orderBy: { dueDate: 'asc' },
   })
 }

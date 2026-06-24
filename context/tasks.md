@@ -38,13 +38,15 @@ Show all in-house orders (any order that hasn't been picked up). Clicking a KPI 
 - **Tabled & Waiting** — tabled but frame not built
 - **Tabled & Built** — tabled and built but not completed
 - **Completed** — completed but not picked up
+- **Must Have** - all non picked up orders with Must Have status
+- **Delayed** - all non picked up orders with Dealyed status
 
 **Tables:**
 Each KPI box populates a table below. All tables include: Order #, Qty, Customer Name, Due Date, plus these status-specific columns:
 
 | Table | Extra Columns |
 |-------|--------------|
-| All Orders Overview | Verified Date, Frame Ordered Date, Frame Received Date, Frame Built Date, Tabled Date, Completed Date |
+| All Orders Overview | Verified Date, Frame Ordered Date, Frame Received Date, Frame Built Date, Tabled Date, Completed Date, Must Have, Delayed |
 | Not Verified | Frame Ordered Date, Frame Received Date |
 | Verified & Waiting | Frame Ordered Date |
 | Verified & Received | Frame Received Date |
@@ -70,7 +72,7 @@ Wire up the search box in the left panel (under "Current Orders") to return real
 **Search Behavior:**
 - Magnifying glass icon or pressing Enter initiates search
 - Clicking magnifying glass with empty input returns all orders, sorted: non-picked-up first, then by order number ascending
-- Searchable by: order number, first name, last name, phone number, email
+- Searchable by: order number, first name, last name, phone number
 
 **Results Table Columns:**
 - Order #
@@ -102,16 +104,20 @@ Wire up the search box in the left panel (under "Current Orders") to return real
 Create a customer directory page accessible from the top bar. Display all customers with ability to view, create, and edit customer records.
 
 **Data Display:**
-- Table with columns: Customer Name, Phone, Email, Contact Method, Type, Company
-- Click customer row → view/edit customer details modal or page
-- Search bar at top to filter by name or company
+- Table with columns: Customer Name, Phone, Email, Contact Method
+- Click customer name → view customer details page
+- Search bar at top to filter by name, phone, or email
+- New Customer button near top of panel
+- Heading at top of panel that says "Customer Directory"
 
 **Acceptance Criteria:**
 - Customer directory page accessible from top bar
+- Top panel customer directory button (currently exists, sits to left of customer search bar) should take you to directory with all customers listed in alphabetical order based on last name
+- Top panel customer search bar - when used should return customer directory filtered to just customers that matched search criteria
 - Displays all customers in a table
-- Search/filter by name or company works
+- Search/filter by name or phone or email works
 - Can create new customers with all required fields
-- Can edit existing customer information
+- Can edit existing customer information - edit button will sit in customer profile pages
 - Page styling matches other main panels
 
 ---
@@ -191,9 +197,6 @@ Items that came up during development and should be addressed in future iteratio
 3. **Comments author capture** — `author` field exists in DB but not captured from UI; needs to tie to logged-in user or a name input.
    - **Status:** Partially implemented
 
-4. **Add `orderedAt` field to Order schema** — Needed for 2.2 All Orders "Not Started" KPI box. Tracks when frame was added to the Frame List.
-   - **Status:** Not yet added
-
 ---
 
 ## Completed Tasks
@@ -213,3 +216,13 @@ Items that came up during development and should be addressed in future iteratio
 - **UI Refinement:** Tasks in Phase 4 are quick wins that can be done in parallel with Phase 2–3 work
 - **Planning Documents:** Created for complex tasks; delete after task completion
   - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
+
+# My Answers
+1. I agree with your plan, but make sure receivedAt and pickedUpAt dates are null as well
+2. See below:
+  - Default state: yes "All" should be selected by default for now
+  - I added 2 boxes in the task notes which makes it 11 now. Lets try 3 rows of 4, 4, 3 for now.
+  - Yes you are understanding correctly. Because frame building and tabling can happen at the same time independent of each other, the waiting part of the name indicates that it has the status in the name but is waiting on the other status before it can move to Tabled and Built.
+  - Yes they should show a dash or whatever the null value indicator will be
+
+- The last answer made me realize something - we track receivedAt in orders table but orderDate in frametoorder table - before you continue will you please change it so that there is no longer a receivedAt column but their is a receivedDate column in the frametoorder table and then anywhere we used that redcdeivedAt or will use, we will need to use the receivedDate by joining to frametoorder table. Including using it for the logic of orders don't go on Frames to Build unless they have verifiedAt date and receivedDate.

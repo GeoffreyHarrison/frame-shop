@@ -307,11 +307,11 @@ export function OrderDetails({ order, customer }: OrderDetailsProps) {
             </div>
           </div>
         </div>
-        {order.receivedAt && (
+        {order.frameReceivedDate && (
           <div className="mt-4 pt-3 border-t border-warm-border">
             <span className="text-sm text-primary-dark">
               <span className="font-bold">Frame Received:</span>{" "}
-              {formatDate(order.receivedAt)}
+              {formatDate(order.frameReceivedDate)}
             </span>
           </div>
         )}
