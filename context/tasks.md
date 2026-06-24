@@ -30,7 +30,7 @@ Show all in-house orders (any order that hasn't been picked up). Clicking a KPI 
 
 **KPI Boxes:**
 - **All** — all in-house orders (not picked up)
-- **Not Started** — created but no progress (no frame ordered yet); requires new `orderedAt` field in DB
+- **Not Started** — created but no progress: no `FrameToOrder` record exists AND `verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `pickedUpAt` are all null
 - **Not Verified** — frame ordered or received but not yet verified
 - **Verified & Waiting** — verified but frame not yet received
 - **Verified & Received** — frame received and verified but not yet built
@@ -203,7 +203,7 @@ Items that came up during development and should be addressed in future iteratio
 
 | # | Task | Description |
 |---|------|-------------|
-| 1.1 | Order Status Tracking Infrastructure | Migrated all status buttons from localStorage to database. Added 8 timestamp columns (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `receivedAt`, `pickedUpAt`, `mustHaveStatus`, `delayedStatus`) to Order schema. Created Server Actions in `src/app/actions/order-status.ts`. |
+| 1.1 | Order Status Tracking Infrastructure | Migrated all status buttons from localStorage to database. Added 7 timestamp columns (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `pickedUpAt`, `mustHaveStatus`, `delayedStatus`) to Order schema. Created Server Actions in `src/app/actions/order-status.ts`. Note: `receivedAt` was initially added here then moved — see schema note below. |
 | 2.1 | Daily Summaries Page | Built `/daily-summaries` page with 3 KPI boxes (Orders Taken, Completed, Picked Up), 3 filtered tables, and a calendar selector. Added `orderCreatedAt` timestamp to Order schema. API route at `/api/daily-summaries`. |
 | 2.3 | Binventory Page | Built `/binventory` page showing completed-but-not-picked-up orders. Table with Bin, Order #, Qty, Customer Name, Contact, Due Date, and Picked Up button. Sort options (bin, due date, order #, customer name, asc/desc). |
 | 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
@@ -216,13 +216,4 @@ Items that came up during development and should be addressed in future iteratio
 - **UI Refinement:** Tasks in Phase 4 are quick wins that can be done in parallel with Phase 2–3 work
 - **Planning Documents:** Created for complex tasks; delete after task completion
   - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
-
-# My Answers
-1. I agree with your plan, but make sure receivedAt and pickedUpAt dates are null as well
-2. See below:
-  - Default state: yes "All" should be selected by default for now
-  - I added 2 boxes in the task notes which makes it 11 now. Lets try 3 rows of 4, 4, 3 for now.
-  - Yes you are understanding correctly. Because frame building and tabling can happen at the same time independent of each other, the waiting part of the name indicates that it has the status in the name but is waiting on the other status before it can move to Tabled and Built.
-  - Yes they should show a dash or whatever the null value indicator will be
-
-- The last answer made me realize something - we track receivedAt in orders table but orderDate in frametoorder table - before you continue will you please change it so that there is no longer a receivedAt column but their is a receivedDate column in the frametoorder table and then anywhere we used that redcdeivedAt or will use, we will need to use the receivedDate by joining to frametoorder table. Including using it for the logic of orders don't go on Frames to Build unless they have verifiedAt date and receivedDate.
+- **Schema decision — frame received date:** `receivedAt` was removed from the Order table. Frame received date is now `FrameToOrder.receivedDate`. All queries needing this value JOIN to FrameToOrder. `getOrdersReadyForFrameBuild()` requires both `verifiedAt` (on Order) and `frameToOrder.receivedDate` to be set.
