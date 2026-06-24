@@ -6,213 +6,122 @@ Structured task list converted from loose notes in CLAUDE.md (Project Updates �
 
 ## Phase 1: Core Status & Workflow
 
-### 1.1 Order Status Tracking Infrastructure
-**Status:** Foundational — Required before most other features
-**Planning Document:** `context/planning/order_status_tracking.md` *(delete after task completion)*
+### 1.2 Picked Up Button — Order Search (Remaining)
+**Status:** In Progress — Order Details & Binventory done; Order Search view still needed
 **Description:**
-Establish database columns and app logic to track order progression through lifecycle:
-- `receivedAt` — timestamp when frame was received
-- `verifiedAt` — timestamp when order was verified
-- `builtAt` — timestamp when frame was built
-- `pickedUpAt` — timestamp when customer picked up order
+The "Picked Up" button exists on Order Details and Binventory pages. It still needs to be added to the Order Search results (Task 2.4). When built, the button should:
+- Set `pickedUpAt` timestamp in database
+- Remove order from Binventory list
+- Display prominently in search results
 
-Trigger: When Received button is clicked, log received status. When Verified button is clicked, mark verified.
-Logic: Only move order to "Frames to Build" list when BOTH received AND verified are true.
-
-**Key Implementation Details:**
-- Timestamps stored as `DateTime?` (null = not done, Date = when completed)
-- Received and Verified are independent statuses (can be set in any order)
-- Migrate all existing status buttons from localStorage to database
-- Include: Verified, Tabled, Frame Built, Completed
-
-**Acceptance Criteria:**
-- Schema updated with status timestamp columns
-- Received button marks order as received
-- Verified button marks order as verified
-- Orders only appear in "Frames to Build" if both statuses are set
-- Status mismatches (e.g., received but not verified) are tracked and visible
-- All status buttons reading from database instead of localStorage
-
----
-
-### 1.2 Picked Up Button & Functionality
-**Status:** Dependent on 1.1
-**Description:**
-Add "Picked Up" button and timestamp display to:
-- Order Details page (prominent, larger, more noticeable than other statuses)
-- Binventory page (primary location for pickup workflow)
-- Order search view
-
-When clicked, set `pickedUpAt` timestamp and remove order from relevant lists.
-Display `pickedUpAt` timestamp on order page (similar to status progression, but more prominent).
-
-**Acceptance Criteria:**
-- Button appears in all specified locations
+**Acceptance Criteria (remaining):**
+- Picked Up button appears in Order Search results
 - Clicking marks order as picked up in database
-- Order disappears from Binventory and active order lists
-- Timestamp is recorded for audit trail
-- Picked Up status/timestamp is prominently displayed on order page
-- Design is bigger and more noticeable than other status indicators
+- Order disappears from Binventory
 
 ---
 
 ## Phase 2: New Pages & Features
 
-### 2.1 Daily Summaries Page
-**Status:** Medium priority
-**Depends On:** Task 1.1 (Order Status Tracking)
-**Description:**
-New page showing daily snapshots of order progress. Includes:
-- KPI metric boxes (4 totals at top):
-  - Orders Taken (today)
-  - Orders Completed (today)
-  - Orders Picked Up (today)
-  - Pending (not yet taken/completed)
-- Three status tables below:
-  - Orders Taken
-  - Orders Completed
-  - Orders Picked Up
-- Calendar selector to view any day's summary (not just today)
-- Show orders with mismatched status (received but not verified) — display on page for visibility
-
-**Acceptance Criteria:**
-- Page loads with current day's data
-- KPI boxes display accurate counts
-- Three tables show filtered orders by status
-- Calendar selector changes date and updates all data
-- Page accessible from left panel
-- Received-but-not-verified orders visible (clarify desired display with user)
-
----
-
 ### 2.2 All Orders Page
-**Status:** Medium priority — May be good place to showcase KPI metric boxes with drill-down
+**Status:** Not yet started
 **Description:**
-Show all in-house orders (from "taken" through "completed" through "waiting for pickup").
-Explore: Could this page use dropdown KPI metric boxes that expand to show orders in each status? When you click an order number, navigate to Order Details.
+Show all in-house orders (any order that hasn't been picked up). Clicking a KPI box populates a filtered table below it.
+
+**KPI Boxes:**
+- **All** — all in-house orders (not picked up)
+- **Not Started** — created but no progress (no frame ordered yet); requires new `orderedAt` field in DB
+- **Not Verified** — frame ordered or received but not yet verified
+- **Verified & Waiting** — verified but frame not yet received
+- **Verified & Received** — frame received and verified but not yet built
+- **Frames Built & Waiting** — frame built but not tabled
+- **Tabled & Waiting** — tabled but frame not built
+- **Tabled & Built** — tabled and built but not completed
+- **Completed** — completed but not picked up
+
+**Tables:**
+Each KPI box populates a table below. All tables include: Order #, Qty, Customer Name, Due Date, plus these status-specific columns:
+
+| Table | Extra Columns |
+|-------|--------------|
+| All Orders Overview | Verified Date, Frame Ordered Date, Frame Received Date, Frame Built Date, Tabled Date, Completed Date |
+| Not Verified | Frame Ordered Date, Frame Received Date |
+| Verified & Waiting | Frame Ordered Date |
+| Verified & Received | Frame Received Date |
+| Frames Built & Waiting | Frame Built Date |
+| Tabled & Waiting | Frame Received Date, Tabled Date |
+| Tabled & Built | Frame Built Date, Tabled Date |
+| Completed | Completed Date |
 
 **Acceptance Criteria:**
-- Displays all in-house orders
-- Filters/grouping by status (or KPI drill-down) works
+- Displays all in-house (not picked up) orders
+- KPI boxes show accurate counts for each status bucket
+- Clicking KPI box shows corresponding filtered table
 - Clicking order number navigates to Order Details
-- Page is accessible from left panel
-
----
-
-### 2.3 Binventory Page (Completed Orders Waiting for Pickup)
-**Status:** Medium priority
-**Planning Document:** `context/planning/binventory-page.md` (to be created)
-**Description:**
-Show completed orders that are not yet picked up, organized by bin location. Staff retrieve orders from bins and mark them as picked up.
-
-**Data Requirements:**
-- Filter: `completedAt IS NOT NULL AND pickedUpAt IS NULL`
-- Read fields: `binLocation`, `orderNumber`, `itemCount`, `customerId` → customer name, `customer.contactMethod`, `dueDate`
-- Display: binLocation, orderNumber, quantity, customerName, contactMethod, dueDate, pickedUp button
-
-**UI Layout:**
-1. **Page Heading** — "Binventory" in same style as other main panel pages (navy bar)
-2. **Sort Options** (above table):
-   - Sort by: [Bin Name | Due Date | Order Number | Customer Name]
-   - Direction: [↑ Ascending | ↓ Descending]
-   - Default: Due Date (Ascending)
-3. **Table** — styled like Frame List tables:
-   - **Header row:** Navy background with white text, column names
-   - **Data rows:** Alternating white and light-grey background for visual distinction
-   - **Columns:**
-     | Bin | Order # | Qty | Customer Name | Contact | Due Date | Picked Up |
-     - Bin: the `binLocation` value (e.g., "A", "B", "C")
-     - Order #: `orderNumber` (font-mono)
-     - Qty: `itemCount` formatted as (x2)
-     - Customer Name: customer's firstName + lastName
-     - Contact: customer's `contactMethod` (Call, Text, Email)
-     - Due Date: formatted date (e.g., 5/25/2026)
-     - Picked Up: smaller version of the picked-up button (half the size of the Order Details button)
-4. **Empty State:** If no completed-but-unpicked-up orders, show "No orders waiting for pickup"
-
-**Styling Notes:**
-- Table border: `border-primary-dark/15`
-- Header: `bg-primary-dark`, `text-white`
-- Rows: alternating `bg-white` and `bg-light-grey`
-- Border between rows: `border-b border-primary-dark/10`
-- Picked Up button: Navy circle when selected, gray border when not (same as Order Details but smaller)
-
-**Functionality:**
-- Click Picked Up button → calls Server Action to set `pickedUpAt` → order disappears from table
-- Clicking order number → navigates to Order Details page
-- Sort options update table dynamically (no page reload)
-
-**Acceptance Criteria:**
-- ✅ Displays only completed + not-yet-picked-up orders
-- ✅ Table uses Frame List styling (navy header, alternating row colors)
-- ✅ Sort options: bin name, due date, order number, customer name (asc/desc)
-- ✅ Default sort: due date ascending
-- ✅ Picked Up button (smaller size) works and removes order immediately
-- ✅ Clicking order number opens Order Details
-- ✅ Page heading matches other main panel pages
-- ✅ Page accessible from right panel (and left panel in future)
+- Page accessible from left panel ("All Orders" link)
 
 ---
 
 ### 2.4 Search Order Functionality
-**Status:** Medium priority — Adapt existing search, align to current design
+**Status:** Not yet started
 **Description:**
-Adapt the original search functionality to current UI and add missing pieces:
-- Columns: Order #, Last Name, First Name, Bin (with letter input field), Frame (SKU #), Date (order taken), Verify (button), Done (Picked Up button)
-- Row below each result showing staffer-inputed frame description
-- Verify button toggles state to show it's been clicked
-- Done button marks order as picked up
+Wire up the search box in the left panel (under "Current Orders") to return real order results.
+
+**Search Behavior:**
+- Magnifying glass icon or pressing Enter initiates search
+- Clicking magnifying glass with empty input returns all orders, sorted: non-picked-up first, then by order number ascending
+- Searchable by: order number, first name, last name, phone number, email
+
+**Results Table Columns:**
+- Order #
+- Last Name
+- First Name
+- Bin (editable input field)
+- Frame SKU
+- Date (order taken)
+- Verify button (toggles verified status, reflects `verifiedAt`)
+- Picked Up button (sets `pickedUpAt`, same as Binventory)
+
+**Row Detail:**
+- Secondary row below each result showing staffer-inputted frame description
 
 **Acceptance Criteria:**
-- Search returns orders matching criteria
+- Search returns matching orders
 - All columns display correctly
-- Verify button is clickable and indicates state
-- Done (Picked Up) button works
-- Staffer description shows on secondary row
-- Bin letter field is editable
+- Verify button is clickable and syncs with database
+- Picked Up button works and removes order from Binventory
+- Staffer frame description shows on secondary row
+- Bin letter field is editable and saves to database
+- Empty search returns all orders sorted correctly
 
 ---
 
 ### 2.5 Customer Directory
-**Status:** Medium priority
-**Planning Document:** `context/planning/customer-directory.md` (to be created)
+**Status:** Not yet started
 **Description:**
-Create a customer directory page accessible from the top bar. Display all customers with ability to:
-- View customer details (name, phone, email, contact method, address, company, type, notes, etc.)
-- Create new customers
-- Edit existing customer information
-- Search/filter customers by name, company, or type
+Create a customer directory page accessible from the top bar. Display all customers with ability to view, create, and edit customer records.
 
 **Data Display:**
 - Table with columns: Customer Name, Phone, Email, Contact Method, Type, Company
 - Click customer row → view/edit customer details modal or page
 - Search bar at top to filter by name or company
 
-**Subtask: Order Contact Method Display**
-When implementing this task, also ensure:
-- Customer contact method (`contactMethod`) is properly associated with orders
-- Add `customerContactMethod` field to Order interface (COMPLETED in this commit)
-- Update all order displays (Binventory, Daily Detail, Order Search) to show customer contact method
-- This ensures staff can see preferred contact method when managing orders
-
 **Acceptance Criteria:**
-- ✅ Customer directory page accessible from top bar
-- ✅ Display all customers in a table
-- ✅ Search/filter functionality works
-- ✅ Can create new customers with all required fields
-- ✅ Can edit existing customer information
-- ✅ Contact method displays correctly in all order views (Binventory, etc.)
-- ✅ Page styling matches other main panels
+- Customer directory page accessible from top bar
+- Displays all customers in a table
+- Search/filter by name or company works
+- Can create new customers with all required fields
+- Can edit existing customer information
+- Page styling matches other main panels
 
 ---
 
 ## Phase 3: Supporting Lists
 
 ### 3.1 Mat List
-**Status:** Lower priority — Use original design as inspiration
+**Status:** Lower priority
 **Description:**
 Create Mat List page showing available mats, organized similar to Frame List.
-Reuse original mat list design patterns.
 
 **Acceptance Criteria:**
 - Page displays mats in logical grouping (by type/vendor or similar)
@@ -222,10 +131,9 @@ Reuse original mat list design patterns.
 ---
 
 ### 3.2 Glass List
-**Status:** Lower priority — Use original design as inspiration
+**Status:** Lower priority
 **Description:**
 Create Glass List page showing available glass options.
-Reuse original glass list design patterns.
 
 **Acceptance Criteria:**
 - Page displays glass options in logical grouping
@@ -234,10 +142,9 @@ Reuse original glass list design patterns.
 
 ---
 
-### 3.3 Supply List (Future)
+### 3.3 Supply List
 **Status:** Deferred — Not building immediately
 **Description:**
-(Not building now, but planned for future)
 List of regular supplies sorted by team-defined parameters. Include order buttons that route to specific vendor lists. Will need backend to let team update the supply list.
 
 ---
@@ -247,35 +154,9 @@ List of regular supplies sorted by team-defined parameters. Include order button
 ### 4.1 Button Label Changes
 **Priority:** Low
 **Tasks:**
-- Frame List: Change "Order" button label (currently says "Ordered"?) — clarify desired label
+- Frame List: Clarify desired label for "Order" button
 - "To Order:" lists: Change button to past tense "Ordered" instead of "Order"
 - "To Order:" lists: Add "Remove" button alongside "Ordered"
-
----
-
-### 4.2 Bin Location Input (COMPLETE)
-**Status:** ✅ Complete
-**Description:**
-Bin location field styling and persistence have been fully implemented and tested.
-
-**What was fixed:**
-1. **Visual appearance:** 
-   - Removed unwanted gap between parentheses and input field
-   - Fixed width calculation to properly expand with content (1ch per character)
-   - No character cutoff at any length
-   
-2. **Data persistence:**
-   - Bin location now saves to database immediately when value is entered
-   - Previously only saved if order was completed — now saves at any point in workflow
-   - Data persists across navigation and page reloads
-
-**Acceptance Criteria:** ✅
-- ✅ Bin location field visually integrated and clean appearance
-- ✅ User can add/edit bin letter at any time
-- ✅ Input properly expands as content grows
-- ✅ All characters remain visible (no cutoff)
-- ✅ Value persists to database when navigating away
-- ✅ Value persists when returning to order details page
 
 ---
 
@@ -284,8 +165,7 @@ Bin location field styling and persistence have been fully implemented and teste
 ### 5.1 Functionality Audit
 **Status:** Before next major phase
 **Description:**
-Create comprehensive list of all current implemented functionality (pages, buttons, data flow, status tracking).
-This will help align remaining data model changes with what the app currently does.
+Create comprehensive list of all current implemented functionality (pages, buttons, data flow, status tracking). Helps align remaining data model changes with what the app currently does.
 
 **Acceptance Criteria:**
 - Documented list of all working features
@@ -295,61 +175,41 @@ This will help align remaining data model changes with what the app currently do
 
 ---
 
-## Dependencies & Order of Implementation
+## Backlog & Known Issues
 
-**Recommended sequence:**
-1. **1.1 Order Status Tracking** (foundational)
-2. **1.2 Picked Up Button** (depends on 1.1)
-3. **2.1 Daily Summaries** (medium effort, high visibility)
-4. **2.3 Binventory** (depends on status tracking from 1.1)
-5. **2.2 All Orders** (depends on status tracking)
-6. **2.4 Search Order** (polish existing feature)
-7. **4.1 Button Label Changes** (quick wins)
-8. **4.2 Bin Number Fix** (quick UI improvement)
-9. **3.1–3.3 Supporting Lists** (lower priority)
-10. **5.1 Functionality Audit** (before planning next phase)
+Items that came up during development and should be addressed in future iterations.
+
+1. **Frame Received status display** — Show contextual text based on frame status:
+   - "Frame not ordered" — frame not yet on Frame List
+   - "Frame ordered but not received" — on Frame List but not received
+   - Show date when received
+   - **Status:** Not yet implemented
+
+2. **Order Details panel width** — Section containers should stretch further right; spacing should be symmetric on both sides.
+   - **Status:** Not yet implemented
+
+3. **Comments author capture** — `author` field exists in DB but not captured from UI; needs to tie to logged-in user or a name input.
+   - **Status:** Partially implemented
+
+4. **Add `orderedAt` field to Order schema** — Needed for 2.2 All Orders "Not Started" KPI box. Tracks when frame was added to the Frame List.
+   - **Status:** Not yet added
+
+---
+
+## Completed Tasks
+
+| # | Task | Description |
+|---|------|-------------|
+| 1.1 | Order Status Tracking Infrastructure | Migrated all status buttons from localStorage to database. Added 8 timestamp columns (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `receivedAt`, `pickedUpAt`, `mustHaveStatus`, `delayedStatus`) to Order schema. Created Server Actions in `src/app/actions/order-status.ts`. |
+| 2.1 | Daily Summaries Page | Built `/daily-summaries` page with 3 KPI boxes (Orders Taken, Completed, Picked Up), 3 filtered tables, and a calendar selector. Added `orderCreatedAt` timestamp to Order schema. API route at `/api/daily-summaries`. |
+| 2.3 | Binventory Page | Built `/binventory` page showing completed-but-not-picked-up orders. Table with Bin, Order #, Qty, Customer Name, Contact, Due Date, and Picked Up button. Sort options (bin, due date, order #, customer name, asc/desc). |
+| 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
 
 ---
 
 ## Notes
 
-- **localStorage → Database:** Most of these tasks will require migrating status tracking from localStorage to Server Actions + database mutations (Phase 2 work mentioned in project notes)
-- **Data Model:** Several tasks depend on finalizing the data schema with the user's client — bin numbers, status columns, timestamps need confirmation
-- **UI Refinement:** Tasks in Phase 4 are small wins that can be done in parallel with Phase 2–3 work
-
-## Planning Documents
-
-Planning documents are created for complex tasks to break down implementation steps. **Delete after task completion.**
-
-- **Task 1.1:** `context/planning/order_status_tracking.md` — Schema changes, Server Actions, UI updates, migration strategy
-
-
-## Backlog & Known Issues
-These items came up during development and should be addressed in future iterations.
-
-1. **Frame Received status display** — When there is no Frame Received date, show contextual message:
-   - "Frame not ordered" — when order created but frame not yet ordered
-   - "Frame ordered but not received" — when order placed with vendor but not arrived
-   - Show date when order received
-   - **Status:** Not yet implemented
-
-2. **Order Details panel width** — Increase width of section containers to better use right side space.
-   - Currently constrained; should match left-side padding on right side too.
-   - **Status:** Not yet implemented
-
-3. **Comments with author & timestamp** — Comments should include both the author and creation timestamp in the database.
-   - **Status:** Partially implemented (timestamps exist, need author capture in UI)
-
-4. **Bin location workflow decision** — Confirmed that bin can be entered at ANY point in workflow, not just when order is completed.
-   - **Status:** ✅ Resolved (updated in Task 4.2)
-
-# My Answers
-1. The page should default to the current date. When you pick a different date, it should show data for that newly selected date. When you leave and come back to the page it should go back to the current date's view.
-2. These will be the top level KPIs
-  - Orders Taken: Orders that were created that day by a staffer (using new order feature which we will work on later, will need to have an orderCreatedAt timestamp column for the order)
-  - Orders Completed: all orders with completedAt timestamp for the selected date
-  - Orders Picked Up - all orders with pickedUpAt timestamp for the selected date
-  - Lets ignore pending for now.
-3. The tables should list the corresponding orders to KPI boxes at the top. They should include order number, order quantity, customer name, and due date for now. The top of the table should be the navy blue header that list the status (Orders Taken:, Orders Completed:, Orders Picked Up:) and have the tables styled similarly to Binventory and Frame List.
-4. Lets ignore the mismatched status orders for now.
-  
+- **Data Model:** Several tasks depend on finalizing the data schema with the client — confirm fields before building 2.2
+- **UI Refinement:** Tasks in Phase 4 are quick wins that can be done in parallel with Phase 2–3 work
+- **Planning Documents:** Created for complex tasks; delete after task completion
+  - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
