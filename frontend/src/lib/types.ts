@@ -94,7 +94,6 @@ export interface Order {
   frameBuilt: boolean;
   frameBuiltDate?: string;
   frameReceived: boolean;
-  frameReceivedDate?: string;
   completed: boolean;
   completedDate?: string;
 
@@ -108,7 +107,11 @@ export interface Order {
   delayedStatus?: string | null;
   binLocation?: string;
   orderCreatedAt?: string | undefined;
-  frameReceivedDate?: string; // from FrameToOrder.receivedDate
+
+  // Frame ordering fields — sourced from FrameToOrder relation
+  frameStatus?: "On List" | "Ordered" | "Received"; // undefined = no FrameToOrder record
+  frameOrderedDate?: string; // FrameToOrder.orderedDate
+  frameReceivedDate?: string; // FrameToOrder.receivedDate
 
   // Comments
   comments: OrderComment[];

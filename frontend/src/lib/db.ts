@@ -51,7 +51,6 @@ function mapOrder(row: any): Order {
     frameBuilt: row.frameBuilt,
     frameBuiltDate: toDateStrOrUndefined(row.frameBuiltDate),
     frameReceived: row.frameReceived,
-    frameReceivedDate: toDateStrOrUndefined(row.frameReceivedDate),
     completed: row.completed,
     completedDate: toDateStrOrUndefined(row.completedDate),
     // New status timestamp columns (task 1.1)
@@ -64,7 +63,9 @@ function mapOrder(row: any): Order {
     delayedStatus: toDateStrOrUndefined(row.delayedStatus),
     binLocation: row.binLocation ?? undefined,
     orderCreatedAt: toDateStrOrUndefined(row.orderCreatedAt),
-    // Frame received date comes from FrameToOrder, not Order
+    // Frame ordering fields — sourced from FrameToOrder relation
+    frameStatus: row.frameToOrder?.status ?? undefined,
+    frameOrderedDate: toDateStrOrUndefined(row.frameToOrder?.orderedDate),
     frameReceivedDate: toDateStrOrUndefined(row.frameToOrder?.receivedDate),
     comments: (row.comments ?? []).map((c: any) => ({
       id: c.id,
@@ -191,6 +192,15 @@ export async function getOrderedFramesForVendor(
   });
 
   return rows.map(mapFrameToOrder);
+}
+
+export async function getAllInHouseOrders(): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    where: { pickedUpAt: null },
+    include: { customer: true, comments: true, frameToOrder: true },
+    orderBy: { dueDate: "asc" },
+  });
+  return rows.map(mapOrder);
 }
 
 export async function getOrdersWaitingForPickup(): Promise<Order[]> {
