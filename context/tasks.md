@@ -23,47 +23,6 @@ The "Picked Up" button exists on Order Details and Binventory pages. It still ne
 
 ## Phase 2: New Pages & Features
 
-### 2.2 All Orders Page
-**Status:** Not yet started
-**Description:**
-Show all in-house orders (any order that hasn't been picked up). Clicking a KPI box populates a filtered table below it.
-
-**KPI Boxes:**
-- **All** — all in-house orders (not picked up)
-- **Not Started** — created but no progress: no `FrameToOrder` record exists AND `verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `pickedUpAt` are all null
-- **Not Verified** — frame ordered or received but not yet verified
-- **Verified & Waiting** — verified but frame not yet received
-- **Verified & Received** — frame received and verified but not yet built
-- **Frames Built & Waiting** — frame built but not tabled
-- **Tabled & Waiting** — tabled but frame not built
-- **Tabled & Built** — tabled and built but not completed
-- **Completed** — completed but not picked up
-- **Must Have** - all non picked up orders with Must Have status
-- **Delayed** - all non picked up orders with Dealyed status
-
-**Tables:**
-Each KPI box populates a table below. All tables include: Order #, Qty, Customer Name, Due Date, plus these status-specific columns:
-
-| Table | Extra Columns |
-|-------|--------------|
-| All Orders Overview | Verified Date, Frame Ordered Date, Frame Received Date, Frame Built Date, Tabled Date, Completed Date, Must Have, Delayed |
-| Not Verified | Frame Ordered Date, Frame Received Date |
-| Verified & Waiting | Frame Ordered Date |
-| Verified & Received | Frame Received Date |
-| Frames Built & Waiting | Frame Built Date |
-| Tabled & Waiting | Frame Received Date, Tabled Date |
-| Tabled & Built | Frame Built Date, Tabled Date |
-| Completed | Completed Date |
-
-**Acceptance Criteria:**
-- Displays all in-house (not picked up) orders
-- KPI boxes show accurate counts for each status bucket
-- Clicking KPI box shows corresponding filtered table
-- Clicking order number navigates to Order Details
-- Page accessible from left panel ("All Orders" link)
-
----
-
 ### 2.4 Search Order Functionality
 **Status:** Not yet started
 **Description:**
@@ -207,6 +166,7 @@ Items that came up during development and should be addressed in future iteratio
 | 2.1 | Daily Summaries Page | Built `/daily-summaries` page with 3 KPI boxes (Orders Taken, Completed, Picked Up), 3 filtered tables, and a calendar selector. Added `orderCreatedAt` timestamp to Order schema. API route at `/api/daily-summaries`. |
 | 2.3 | Binventory Page | Built `/binventory` page showing completed-but-not-picked-up orders. Table with Bin, Order #, Qty, Customer Name, Contact, Due Date, and Picked Up button. Sort options (bin, due date, order #, customer name, asc/desc). |
 | 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
+| 2.2 | All Orders Page | Built `/all-orders` page with 11 KPI boxes in a 4-4-3 grid. Clicking a KPI filters the table below. Each KPI has its own filter logic and specific extra columns. Table is horizontally scrollable for wide views like "All". Also: moved frame received tracking from `Order.receivedAt` to `FrameToOrder.receivedDate`; added `frameStatus`, `frameOrderedDate`, `frameReceivedDate` fields to Order interface sourced from FrameToOrder relation. |
 
 ---
 
