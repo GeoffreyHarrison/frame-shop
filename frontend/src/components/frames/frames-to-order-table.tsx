@@ -127,11 +127,7 @@ export function FramesToOrderTable({ frames }: FramesToOrderTableProps) {
                             : "bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10"
                         }`}
                       >
-                        {isOrdered ? (
-                          "Ordered"
-                        ) : (
-                          "Order"
-                        )}
+                          Order
                       </button>
                     </td>
                   </tr>

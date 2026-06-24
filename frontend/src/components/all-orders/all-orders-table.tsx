@@ -112,7 +112,8 @@ export function AllOrdersTable({ orders, kpi }: AllOrdersTableProps) {
           No orders in this category
         </div>
       ) : (
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-max">
           <thead>
             <tr className="border-b border-primary-dark/10 bg-light-grey">
               {columns.map((col) => (
@@ -149,6 +150,7 @@ export function AllOrdersTable({ orders, kpi }: AllOrdersTableProps) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

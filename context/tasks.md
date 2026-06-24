@@ -119,9 +119,9 @@ List of regular supplies sorted by team-defined parameters. Include order button
 ### 4.1 Button Label Changes
 **Priority:** Low
 **Tasks:**
-- Frame List: Clarify desired label for "Order" button
-- "To Order:" lists: Change button to past tense "Ordered" instead of "Order"
-- "To Order:" lists: Add "Remove" button alongside "Ordered"
+- Frame List: when "Order" button is pressed, should say still say "Order" instead of ordered. All styling stays the same
+- "To Order:" lists: Add button called "Ordered" for each row that looks and behaves like "Order" button on Frame List, but this one is what populates FrameToOrder table orderedDate
+- "To Order:" lists: Add "Remove" button to right of "Ordered" button on each row
 
 ---
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import type { FrameToOrder } from "@/lib/types";
 import { loadStatuses, type FrameStatus } from "@/lib/vendor-orders";
+import { markFrameOrdered, removeFrameFromOrderList } from "@/app/actions/frame-orders";
 
 interface OrderListTableProps {
   frames: FrameToOrder[];
@@ -17,6 +18,7 @@ function getLastName(fullName: string): string {
 
 export function OrderListTable({ frames, vendor }: OrderListTableProps) {
   const [statuses, setStatuses] = useState<Record<string, FrameStatus>>({});
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     setStatuses(loadStatuses());
@@ -31,6 +33,26 @@ export function OrderListTable({ frames, vendor }: OrderListTableProps) {
       return f.vendor === vendor && status === "Ordered";
     })
     .sort((a, b) => a.frameSku.localeCompare(b.frameSku));
+
+  const handleOrdered = async (frame: FrameToOrder) => {
+    if (loadingId) return;
+    setLoadingId(frame.id);
+    try {
+      await markFrameOrdered(frame.id);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleRemove = async (frame: FrameToOrder) => {
+    if (loadingId) return;
+    setLoadingId(frame.id);
+    try {
+      await removeFrameFromOrderList(frame.id);
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   return (
     <>
@@ -68,22 +90,50 @@ export function OrderListTable({ frames, vendor }: OrderListTableProps) {
                 <th className="text-left px-4 py-3 text-sm font-semibold text-white">Frame SKU</th>
                 <th className="text-center px-4 py-3 text-sm font-semibold text-white">Footage</th>
                 <th className="text-left px-4 py-3 text-sm font-semibold text-white">Description</th>
+                <th className="text-center px-4 py-3 text-sm font-semibold text-white no-print">Ordered</th>
+                <th className="text-center px-4 py-3 text-sm font-semibold text-white no-print">Remove</th>
               </tr>
             </thead>
             <tbody>
-              {orderedFrames.map((frame, idx) => (
-                <tr
-                  key={frame.id}
-                  className={`border-b border-primary-dark/10 ${idx % 2 === 0 ? "bg-white" : "bg-light-grey"}`}
-                >
-                  <td className="px-4 py-3 text-sm text-primary-dark font-mono">{frame.orderNumber}</td>
-                  <td className="px-4 py-3 text-sm text-primary-dark">{getLastName(frame.customerName)}</td>
-                  <td className="px-4 py-3 text-sm text-primary text-center">(x{frame.qty})</td>
-                  <td className="px-4 py-3 text-sm text-primary-dark font-mono">{frame.frameSku}</td>
-                  <td className="px-4 py-3 text-sm text-primary text-center">{frame.footage}</td>
-                  <td className="px-4 py-3 text-sm text-primary/70">[{frame.frameNotes}]</td>
-                </tr>
-              ))}
+              {orderedFrames.map((frame, idx) => {
+                const isOrdered = !!frame.orderedDate;
+                const isLoading = loadingId === frame.id;
+                return (
+                  <tr
+                    key={frame.id}
+                    className={`border-b border-primary-dark/10 ${idx % 2 === 0 ? "bg-white" : "bg-light-grey"}`}
+                  >
+                    <td className="px-4 py-3 text-sm text-primary-dark font-mono">{frame.orderNumber}</td>
+                    <td className="px-4 py-3 text-sm text-primary-dark">{getLastName(frame.customerName)}</td>
+                    <td className="px-4 py-3 text-sm text-primary text-center">(x{frame.qty})</td>
+                    <td className="px-4 py-3 text-sm text-primary-dark font-mono">{frame.frameSku}</td>
+                    <td className="px-4 py-3 text-sm text-primary text-center">{frame.footage}</td>
+                    <td className="px-4 py-3 text-sm text-primary/70">[{frame.frameNotes}]</td>
+                    <td className="px-4 py-3 text-center no-print">
+                      <button
+                        onClick={() => handleOrdered(frame)}
+                        disabled={isLoading}
+                        className={`px-3 py-1 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                          isOrdered
+                            ? "bg-primary-dark text-panel border-primary-dark"
+                            : "bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10"
+                        }`}
+                      >
+                        Ordered
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-center no-print">
+                      <button
+                        onClick={() => handleRemove(frame)}
+                        disabled={isLoading}
+                        className="px-3 py-1 text-xs rounded-md border border-primary-dark/40 text-primary-dark bg-transparent hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
