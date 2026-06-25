@@ -179,5 +179,9 @@ Items that came up during development and should be addressed in future iteratio
   - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
 - **Schema decision — frame received date:** `receivedAt` was removed from the Order table. Frame received date is now `FrameToOrder.receivedDate`. All queries needing this value JOIN to FrameToOrder. `getOrdersReadyForFrameBuild()` requires both `verifiedAt` (on Order) and `frameToOrder.receivedDate` to be set.
 
-3. It should do status update and set receivedDate
-4. I don't understand fully. When selected that order should disappear from the To Order list its on and move back to the frame list under its vendor, so that when I then navigate to the Frame List from the To Order list I'm on, I see the order back there.
+
+# My Answers
+1. Separate Page with full details and an Edit button
+2. Modal on the directory page for now
+3. Lets do full page edit
+4. For now lets just do First Name, Last Name, Phone, Email, Preferred Contact Method as the required fields

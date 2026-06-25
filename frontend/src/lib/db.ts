@@ -266,3 +266,30 @@ export async function getOrdersPickedUpOnDate(date: string): Promise<Order[]> {
 
   return rows.map(mapOrder);
 }
+
+// Customer queries
+export async function getAllCustomers(): Promise<Customer[]> {
+  const rows = await prisma.customer.findMany({
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+  });
+  return rows.map(mapCustomer);
+}
+
+export async function getCustomerById(
+  id: string
+): Promise<{ customer: Customer; orders: Order[] } | null> {
+  const row = await prisma.customer.findUnique({
+    where: { id },
+    include: {
+      orders: {
+        include: { comments: true, frameToOrder: true },
+        orderBy: { dueDate: "desc" },
+      },
+    },
+  });
+  if (!row) return null;
+  return {
+    customer: mapCustomer(row),
+    orders: row.orders.map((o: any) => mapOrder({ ...o, customer: row })),
+  };
+}

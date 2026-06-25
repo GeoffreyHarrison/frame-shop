@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { User } from "lucide-react";
 import { getDefaultDueDate } from "@/lib/due-date";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { SearchInput } from "@/components/ui/search-input";
 
 function toInputValue(date: Date): string {
@@ -18,6 +20,8 @@ function todayInputValue(): string {
 }
 
 export function TopBar() {
+  const router = useRouter();
+  const [customerSearch, setCustomerSearch] = useState("");
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-US", {
     weekday: "long",
@@ -90,13 +94,27 @@ export function TopBar() {
       <div className="shrink-0 hidden xl:flex flex-col gap-1">
         <label className="text-sm font-semibold text-primary-dark font-serif">Customer Directory:</label>
         <div className="flex items-center gap-1.5">
-          <button
+          <Link
+            href="/customers"
             className="w-9 h-9 rounded-full bg-primary-dark flex items-center justify-center text-white hover:bg-primary transition-colors shrink-0"
-            title="Customers"
+            title="Customer Directory"
           >
             <User size={18} />
-          </button>
-          <SearchInput placeholder="Search..." className="w-44" />
+          </Link>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = customerSearch.trim();
+              router.push(q ? `/customers?q=${encodeURIComponent(q)}` : "/customers");
+            }}
+          >
+            <SearchInput
+              placeholder="Search..."
+              className="w-44"
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+            />
+          </form>
         </div>
       </div>
 
