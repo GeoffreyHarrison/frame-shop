@@ -57,28 +57,6 @@ Wire up the search box in the left panel (under "Current Orders") to return real
 
 ---
 
-### 2.5 Customer Directory
-**Status:** Not yet started
-**Description:**
-Create a customer directory page accessible from the top bar. Display all customers with ability to view, create, and edit customer records.
-
-**Data Display:**
-- Table with columns: Customer Name, Phone, Email, Contact Method
-- Click customer name → view customer details page
-- Search bar at top to filter by name, phone, or email
-- New Customer button near top of panel
-- Heading at top of panel that says "Customer Directory"
-
-**Acceptance Criteria:**
-- Customer directory page accessible from top bar
-- Top panel customer directory button (currently exists, sits to left of customer search bar) should take you to directory with all customers listed in alphabetical order based on last name
-- Top panel customer search bar - when used should return customer directory filtered to just customers that matched search criteria
-- Displays all customers in a table
-- Search/filter by name or phone or email works
-- Can create new customers with all required fields
-- Can edit existing customer information - edit button will sit in customer profile pages
-- Page styling matches other main panels
-
 ---
 
 ## Phase 3: Supporting Lists
@@ -167,6 +145,7 @@ Items that came up during development and should be addressed in future iteratio
 | 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
 | 2.2 | All Orders Page | Built `/all-orders` page with 11 KPI boxes in a 4-4-3 grid. Clicking a KPI filters the table below. Each KPI has its own filter logic and specific extra columns. Table is horizontally scrollable for wide views like "All". Also: moved frame received tracking from `Order.receivedAt` to `FrameToOrder.receivedDate`; added `frameStatus`, `frameOrderedDate`, `frameReceivedDate` fields to Order interface sourced from FrameToOrder relation. |
 | 4.1 | Button Label Changes | Frame List: "Order" button text no longer changes to "Ordered" when clicked. To Order lists: added "Ordered" button per row (writes `FrameToOrder.orderedDate` to DB via Server Action, navy fill when set) and "Remove" button per row (resets frame to "On List", clears `orderedDate`). Both buttons hidden from print. |
+| 2.5 | Customer Directory | Built `/customers` directory page (alphabetical, client-side search by name/phone/email, New Customer modal), `/customers/[id]` detail page (all fields + order history), `/customers/[id]/edit` full-page edit. Top bar User icon and search wired to `/customers`. Required fields: First Name, Last Name, Phone, Contact Method. |
 | 4.1b | Frame/To Order Workflow Overhaul | Fully migrated Frame List and To Order list from localStorage to database. "Order" button sets `status='Ordered'` (moves to To Order list). "Ordered" button toggles `orderedDate`. "Frame List" button moves frame back (`status='On List'`). "Remove" sets `status='Removed'`, kept in DB. "Received" sets `status='Received'` + `receivedDate`. Right sidebar vendor links now DB-driven via server-fetched `getVendorsWithOrderedFrames()`. |
 
 ---
