@@ -24,7 +24,7 @@ The "Picked Up" button exists on Order Details and Binventory pages. It still ne
 ## Phase 2: New Pages & Features
 
 ### 2.4 Search Order Functionality
-**Status:** Not yet started
+**Status:** Complete
 **Description:**
 Wire up the search box in the left panel (under "Current Orders") to return real order results.
 
@@ -146,6 +146,7 @@ Items that came up during development and should be addressed in future iteratio
 | 2.2 | All Orders Page | Built `/all-orders` page with 11 KPI boxes in a 4-4-3 grid. Clicking a KPI filters the table below. Each KPI has its own filter logic and specific extra columns. Table is horizontally scrollable for wide views like "All". Also: moved frame received tracking from `Order.receivedAt` to `FrameToOrder.receivedDate`; added `frameStatus`, `frameOrderedDate`, `frameReceivedDate` fields to Order interface sourced from FrameToOrder relation. |
 | 4.1 | Button Label Changes | Frame List: "Order" button text no longer changes to "Ordered" when clicked. To Order lists: added "Ordered" button per row (writes `FrameToOrder.orderedDate` to DB via Server Action, navy fill when set) and "Remove" button per row (resets frame to "On List", clears `orderedDate`). Both buttons hidden from print. |
 | 2.5 | Customer Directory | Built `/customers` directory page (alphabetical, client-side search by name/phone/email, New Customer modal), `/customers/[id]` detail page (all fields + order history), `/customers/[id]/edit` full-page edit. Top bar User icon and search wired to `/customers`. Required fields: First Name, Last Name, Phone, Contact Method. |
+| 2.4 | Search Order Functionality | Wired up left panel "Current Orders" search box. Added `searchOrders` Prisma query (searches orderNumber, firstName, lastName, phone; empty query returns all orders sorted non-picked-up first then by orderNumber). Created `/order-search` page and `OrderSearchTable` component with columns: Order #, Last Name, First Name, Bin (editable), Frame SKU, Date Taken, Verify button, Picked Up button. Secondary row shows frameNotes when present. Added `customerFirstName`/`customerLastName` to Order type and mapOrder. |
 | 4.1b | Frame/To Order Workflow Overhaul | Fully migrated Frame List and To Order list from localStorage to database. "Order" button sets `status='Ordered'` (moves to To Order list). "Ordered" button toggles `orderedDate`. "Frame List" button moves frame back (`status='On List'`). "Remove" sets `status='Removed'`, kept in DB. "Received" sets `status='Received'` + `receivedDate`. Right sidebar vendor links now DB-driven via server-fetched `getVendorsWithOrderedFrames()`. |
 
 ---
@@ -159,8 +160,6 @@ Items that came up during development and should be addressed in future iteratio
 - **Schema decision — frame received date:** `receivedAt` was removed from the Order table. Frame received date is now `FrameToOrder.receivedDate`. All queries needing this value JOIN to FrameToOrder. `getOrdersReadyForFrameBuild()` requires both `verifiedAt` (on Order) and `frameToOrder.receivedDate` to be set.
 
 
-# My Answers
-1. Separate Page with full details and an Edit button
-2. Modal on the directory page for now
-3. Lets do full page edit
-4. For now lets just do First Name, Last Name, Phone, Email, Preferred Contact Method as the required fields
+# Notes to Self
+- Need to add new order button to customer page and customer directory rows
+- Need to remove Customer Type for now from the customer directory

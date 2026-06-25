@@ -52,6 +52,8 @@ export interface Order {
   id: string;
   customerId: string;
   customerName?: string;
+  customerFirstName?: string;
+  customerLastName?: string;
   customerContactMethod?: string;
   orderNumber: string;
   description: string;

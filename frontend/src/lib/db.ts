@@ -17,6 +17,8 @@ function mapOrder(row: any): Order {
     customerName: row.customer
       ? `${row.customer.firstName} ${row.customer.lastName}`
       : undefined,
+    customerFirstName: row.customer?.firstName,
+    customerLastName: row.customer?.lastName,
     customerContactMethod: row.customer?.contactMethod,
     orderNumber: row.orderNumber,
     description: row.description,
@@ -262,6 +264,32 @@ export async function getOrdersPickedUpOnDate(date: string): Promise<Order[]> {
     where: { pickedUpAt: { gte: dayStart, lte: dayEnd } },
     include: { customer: true, comments: true, frameToOrder: true },
     orderBy: { orderNumber: "asc" },
+  });
+
+  return rows.map(mapOrder);
+}
+
+export async function searchOrders(query: string): Promise<Order[]> {
+  const q = query.trim();
+
+  const where = q
+    ? {
+        OR: [
+          { orderNumber: { contains: q, mode: "insensitive" as const } },
+          { customer: { firstName: { contains: q, mode: "insensitive" as const } } },
+          { customer: { lastName: { contains: q, mode: "insensitive" as const } } },
+          { customer: { phone: { contains: q, mode: "insensitive" as const } } },
+        ],
+      }
+    : {};
+
+  const rows = await prisma.order.findMany({
+    where,
+    include: { customer: true, comments: true, frameToOrder: true },
+    orderBy: [
+      { pickedUpAt: { sort: "asc", nulls: "first" } },
+      { orderNumber: "asc" },
+    ],
   });
 
   return rows.map(mapOrder);

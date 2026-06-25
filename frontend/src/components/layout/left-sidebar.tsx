@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
   Check,
@@ -68,6 +69,13 @@ const otherLinks: { href: string; label: string; icon: NavIcon }[] = [
 
 export function LeftSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = () => {
+    const q = searchQuery.trim();
+    router.push(`/order-search${q ? `?q=${encodeURIComponent(q)}` : ""}`);
+  };
 
   const renderIcon = (icon: NavIcon) => {
     if (icon === "T") return <TIcon size={18} />;
@@ -104,7 +112,13 @@ export function LeftSidebar() {
         <label className="text-sm font-semibold text-primary-dark uppercase tracking-wide font-serif">
           Current Orders:
         </label>
-        <SearchInput placeholder="Search orders..." className="mt-2 w-full" />
+        <SearchInput
+          placeholder="Search orders..."
+          className="mt-2 w-full"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onSearch={handleSearch}
+        />
       </div>
 
       <nav className="flex flex-col gap-0.5">
