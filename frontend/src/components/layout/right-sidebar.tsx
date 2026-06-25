@@ -1,11 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import { SearchInput } from "@/components/ui/search-input";
-import framesToOrderData from "@/data/dummy-frames-to-order.json";
-import type { FrameToOrder } from "@/lib/types";
-import { loadStatuses, getOrderedVendors, vendorToSlug } from "@/lib/vendor-orders";
+import { vendorToSlug } from "@/lib/vendor-orders";
 
 const itemLinks = [
   { href: "/frames-to-order", label: "Frame List" },
@@ -15,22 +12,11 @@ const itemLinks = [
   { href: "/pc-order", label: "PC Order" },
 ];
 
-const frames = framesToOrderData as FrameToOrder[];
+interface RightSidebarProps {
+  orderedVendors: string[];
+}
 
-export function RightSidebar() {
-  const [orderedVendors, setOrderedVendors] = useState<string[]>([]);
-
-  const refresh = () => {
-    const statuses = loadStatuses();
-    setOrderedVendors(getOrderedVendors(frames, statuses));
-  };
-
-  useEffect(() => {
-    refresh();
-    window.addEventListener("orderListUpdated", refresh);
-    return () => window.removeEventListener("orderListUpdated", refresh);
-  }, []);
-
+export function RightSidebar({ orderedVendors }: RightSidebarProps) {
   return (
     <aside className="w-64 bg-panel rounded-2xl shadow-lg border border-warm-border flex flex-col p-5 overflow-y-auto scrollbar-hide shrink-0">
       <div className="mb-5">
@@ -40,7 +26,7 @@ export function RightSidebar() {
         <SearchInput placeholder="SKU or description..." className="mt-2 w-full" />
       </div>
 
-      {/* Nav buttons — evenly spaced, PC Order is part of this group */}
+      {/* Nav buttons */}
       <nav className="flex flex-col gap-2">
         {itemLinks.map((link) => (
           <Link
@@ -53,7 +39,7 @@ export function RightSidebar() {
         ))}
       </nav>
 
-      {/* To Order section — floats directly below nav when vendors have orders */}
+      {/* To Order section — shows vendors that have frames with "Ordered" status */}
       {orderedVendors.length > 0 && (
         <div className="mt-4">
           <hr className="border-primary-dark/40 mb-3" />

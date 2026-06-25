@@ -133,6 +133,12 @@ Create comprehensive list of all current implemented functionality (pages, butto
 
 ---
 
+## Outstanding Client Questions
+
+1. **Remove button & orderedDate** — If a frame is removed from the To Order list via the "Remove" button but the "Ordered" button was never clicked (so `orderedDate` is null), should we record an `orderedDate` at the time "Remove" is clicked? This would help with tracking whether a frame was ordered before being pulled from stock. Confirm with client before implementing.
+
+---
+
 ## Backlog & Known Issues
 
 Items that came up during development and should be addressed in future iterations.
@@ -171,3 +177,9 @@ Items that came up during development and should be addressed in future iteratio
 - **Planning Documents:** Created for complex tasks; delete after task completion
   - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
 - **Schema decision — frame received date:** `receivedAt` was removed from the Order table. Frame received date is now `FrameToOrder.receivedDate`. All queries needing this value JOIN to FrameToOrder. `getOrdersReadyForFrameBuild()` requires both `verifiedAt` (on Order) and `frameToOrder.receivedDate` to be set.
+
+# My Answers
+1. Lets tie it to the database and have it set status to "On List".
+2. Lets keep it in the DB for record-keeping for now.
+3. It should do status update and set receivedDate
+4. I don't understand fully. When selected that order should disappear from the To Order list its on and move back to the frame list under its vendor, so that when I then navigate to the Frame List from the To Order list I'm on, I see the order back there.

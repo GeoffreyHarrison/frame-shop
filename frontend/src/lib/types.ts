@@ -142,7 +142,7 @@ export interface FrameToOrder {
   size: string;
   qty: number;
   vendor: string;
-  status: "On List" | "Ordered" | "Received";
+  status: "On List" | "Ordered" | "Received" | "Removed";
   orderedDate?: string;
   receivedDate?: string; // when frame arrived from vendor
 }

@@ -5,6 +5,7 @@ import "./globals.css";
 import { TopBar } from "@/components/layout/top-bar";
 import { LeftSidebar } from "@/components/layout/left-sidebar";
 import { RightSidebar } from "@/components/layout/right-sidebar";
+import { getVendorsWithOrderedFrames } from "@/lib/db";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,11 +23,13 @@ export const metadata: Metadata = {
   description: "Order, inventory, and customer management for Frame Shop",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const orderedVendors = await getVendorsWithOrderedFrames();
+
   return (
     <html lang="en" className={`${geistSans.variable} ${libreBaskerville.variable} h-full antialiased`}>
       <body className="h-full flex flex-col font-sans p-3 gap-3">
@@ -36,7 +39,7 @@ export default function RootLayout({
           <main className="flex-1 overflow-y-auto scrollbar-hide bg-panel rounded-2xl shadow-lg p-8 border border-warm-border">
             {children}
           </main>
-          <RightSidebar />
+          <RightSidebar orderedVendors={orderedVendors} />
         </div>
       </body>
     </html>

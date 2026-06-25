@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { FrameToOrder } from "@/lib/types";
-import { loadStatuses, saveStatus, vendorToSlug, type FrameStatus } from "@/lib/vendor-orders";
+import { moveFrameToOrderList, markFrameReceived } from "@/app/actions/frame-orders";
 
 interface FramesToOrderTableProps {
   frames: FrameToOrder[];
@@ -17,43 +16,43 @@ function getLastName(fullName: string): string {
 }
 
 export function FramesToOrderTable({ frames }: FramesToOrderTableProps) {
-  const router = useRouter();
-  const [statuses, setStatuses] = useState<Record<string, FrameStatus>>({});
   const [disappearing, setDisappearing] = useState<Set<string>>(new Set());
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setStatuses(loadStatuses());
-  }, []);
-
-  const getStatus = useCallback(
-    (frame: FrameToOrder): FrameStatus => statuses[frame.id] ?? frame.status,
-    [statuses]
-  );
-
-  const handleOrder = (frame: FrameToOrder) => {
-    const next: FrameStatus = "Ordered";
-    saveStatus(frame.id, next);
-    setStatuses((prev) => ({ ...prev, [frame.id]: next }));
-    router.refresh();
+  const handleOrder = async (frame: FrameToOrder) => {
+    if (loadingId) return;
+    setLoadingId(frame.id);
+    try {
+      await moveFrameToOrderList(frame.id);
+    } finally {
+      setLoadingId(null);
+    }
   };
 
-  const handleReceived = (frame: FrameToOrder) => {
-    saveStatus(frame.id, "Received");
-    setStatuses((prev) => ({ ...prev, [frame.id]: "Received" }));
+  const handleReceived = async (frame: FrameToOrder) => {
+    if (loadingId) return;
+    setLoadingId(frame.id);
+    // Animate out first, then call server action
     setDisappearing((prev) => new Set(prev).add(frame.id));
-    setTimeout(() => {
-      setDisappearing((prev) => {
-        const next = new Set(prev);
-        next.delete(frame.id);
-        return next;
-      });
-    }, 800);
+    setTimeout(async () => {
+      try {
+        await markFrameReceived(frame.id);
+      } finally {
+        setLoadingId(null);
+        setDisappearing((prev) => {
+          const next = new Set(prev);
+          next.delete(frame.id);
+          return next;
+        });
+      }
+    }, 700);
   };
 
-  // Group by vendor, then sort by SKU within each vendor
+  // Group by vendor, sort by SKU within each vendor
+  // Frame list only receives "On List" frames from the server
   const groups = VENDORS_ORDER.map((vendor) => {
     const vendorFrames = frames
-      .filter((f) => f.vendor === vendor && getStatus(f) !== "Received" && !disappearing.has(f.id))
+      .filter((f) => f.vendor === vendor && !disappearing.has(f.id))
       .sort((a, b) => a.frameSku.localeCompare(b.frameSku));
     return { vendor, frames: vendorFrames };
   }).filter((g) => g.frames.length > 0);
@@ -90,9 +89,8 @@ export function FramesToOrderTable({ frames }: FramesToOrderTableProps) {
             </thead>
             <tbody>
               {vendorFrames.map((frame, idx) => {
-                const status = getStatus(frame);
-                const isOrdered = status === "Ordered";
                 const isEven = idx % 2 === 0;
+                const isLoading = loadingId === frame.id;
                 return (
                   <tr
                     key={frame.id}
@@ -109,25 +107,19 @@ export function FramesToOrderTable({ frames }: FramesToOrderTableProps) {
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => handleReceived(frame)}
-                        className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                          status === "Received"
-                            ? "bg-primary-dark text-panel border-primary-dark"
-                            : "bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10"
-                        }`}
+                        disabled={isLoading}
+                        className="px-3 py-1 text-xs rounded-md border transition-colors bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10 disabled:opacity-50"
                       >
                         Received
                       </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => !isOrdered && handleOrder(frame)}
-                        className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                          isOrdered
-                            ? "bg-primary-dark text-panel border-primary-dark cursor-default"
-                            : "bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10"
-                        }`}
+                        onClick={() => handleOrder(frame)}
+                        disabled={isLoading}
+                        className="px-3 py-1 text-xs rounded-md border transition-colors bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10 disabled:opacity-50"
                       >
-                          Order
+                        Order
                       </button>
                     </td>
                   </tr>

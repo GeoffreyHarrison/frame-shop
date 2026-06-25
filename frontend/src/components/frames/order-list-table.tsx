@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Download } from "lucide-react";
 import type { FrameToOrder } from "@/lib/types";
-import { loadStatuses, type FrameStatus } from "@/lib/vendor-orders";
-import { markFrameOrdered, removeFrameFromOrderList } from "@/app/actions/frame-orders";
+import {
+  setFrameOrderedDate,
+  clearFrameOrderedDate,
+  moveFrameBackToList,
+  removeFrameFromDisplay,
+} from "@/app/actions/frame-orders";
 
 interface OrderListTableProps {
   frames: FrameToOrder[];
@@ -17,42 +21,35 @@ function getLastName(fullName: string): string {
 }
 
 export function OrderListTable({ frames, vendor }: OrderListTableProps) {
-  const [statuses, setStatuses] = useState<Record<string, FrameStatus>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setStatuses(loadStatuses());
-    const handler = () => setStatuses(loadStatuses());
-    window.addEventListener("orderListUpdated", handler);
-    return () => window.removeEventListener("orderListUpdated", handler);
-  }, []);
-
-  const orderedFrames = frames
-    .filter((f) => {
-      const status = statuses[f.id] ?? f.status;
-      return f.vendor === vendor && status === "Ordered";
-    })
+  // Frames arrive already filtered to "Ordered" status for this vendor (from server)
+  const vendorFrames = frames
+    .filter((f) => f.vendor === vendor)
     .sort((a, b) => a.frameSku.localeCompare(b.frameSku));
 
-  const handleOrdered = async (frame: FrameToOrder) => {
+  const withLoading = async (frameId: string, fn: () => Promise<void>) => {
     if (loadingId) return;
-    setLoadingId(frame.id);
+    setLoadingId(frameId);
     try {
-      await markFrameOrdered(frame.id);
+      await fn();
     } finally {
       setLoadingId(null);
     }
   };
 
-  const handleRemove = async (frame: FrameToOrder) => {
-    if (loadingId) return;
-    setLoadingId(frame.id);
-    try {
-      await removeFrameFromOrderList(frame.id);
-    } finally {
-      setLoadingId(null);
-    }
-  };
+  const handleOrderedToggle = (frame: FrameToOrder) =>
+    withLoading(frame.id, () =>
+      frame.orderedDate
+        ? clearFrameOrderedDate(frame.id)
+        : setFrameOrderedDate(frame.id)
+    );
+
+  const handleFrameList = (frame: FrameToOrder) =>
+    withLoading(frame.id, () => moveFrameBackToList(frame.id));
+
+  const handleRemove = (frame: FrameToOrder) =>
+    withLoading(frame.id, () => removeFrameFromDisplay(frame.id));
 
   return (
     <>
@@ -75,7 +72,7 @@ export function OrderListTable({ frames, vendor }: OrderListTableProps) {
         </button>
       </div>
 
-      {orderedFrames.length === 0 ? (
+      {vendorFrames.length === 0 ? (
         <div className="px-6 py-10 text-center text-base text-primary/60">
           No frames ordered for this vendor yet
         </div>
@@ -91,11 +88,12 @@ export function OrderListTable({ frames, vendor }: OrderListTableProps) {
                 <th className="text-center px-4 py-3 text-sm font-semibold text-white">Footage</th>
                 <th className="text-left px-4 py-3 text-sm font-semibold text-white">Description</th>
                 <th className="text-center px-4 py-3 text-sm font-semibold text-white no-print">Ordered</th>
+                <th className="text-center px-4 py-3 text-sm font-semibold text-white no-print">Frame List</th>
                 <th className="text-center px-4 py-3 text-sm font-semibold text-white no-print">Remove</th>
               </tr>
             </thead>
             <tbody>
-              {orderedFrames.map((frame, idx) => {
+              {vendorFrames.map((frame, idx) => {
                 const isOrdered = !!frame.orderedDate;
                 const isLoading = loadingId === frame.id;
                 return (
@@ -109,19 +107,34 @@ export function OrderListTable({ frames, vendor }: OrderListTableProps) {
                     <td className="px-4 py-3 text-sm text-primary-dark font-mono">{frame.frameSku}</td>
                     <td className="px-4 py-3 text-sm text-primary text-center">{frame.footage}</td>
                     <td className="px-4 py-3 text-sm text-primary/70">[{frame.frameNotes}]</td>
+
+                    {/* Ordered — fills navy when orderedDate is set */}
                     <td className="px-4 py-3 text-center no-print">
                       <button
-                        onClick={() => handleOrdered(frame)}
+                        onClick={() => handleOrderedToggle(frame)}
                         disabled={isLoading}
                         className={`px-3 py-1 text-xs rounded-md border transition-colors disabled:opacity-50 ${
                           isOrdered
-                            ? "bg-primary-dark text-panel border-primary-dark"
+                            ? "bg-primary-dark text-white border-primary-dark"
                             : "bg-transparent text-primary-dark border-primary-dark hover:bg-primary-dark/10"
                         }`}
                       >
                         Ordered
                       </button>
                     </td>
+
+                    {/* Frame List — moves back to Frame List */}
+                    <td className="px-4 py-3 text-center no-print">
+                      <button
+                        onClick={() => handleFrameList(frame)}
+                        disabled={isLoading}
+                        className="px-3 py-1 text-xs rounded-md border border-primary-dark/40 text-primary-dark bg-transparent hover:bg-primary-dark/10 transition-colors disabled:opacity-50"
+                      >
+                        Frame List
+                      </button>
+                    </td>
+
+                    {/* Remove — hides from all lists, kept in DB */}
                     <td className="px-4 py-3 text-center no-print">
                       <button
                         onClick={() => handleRemove(frame)}

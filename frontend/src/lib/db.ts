@@ -175,6 +175,7 @@ export async function getOrderWithCustomer(
 
 export async function getAllFramesToOrder(): Promise<FrameToOrder[]> {
   const rows = await prisma.frameToOrder.findMany({
+    where: { status: "On List" },
     include: { order: { include: { customer: true } } },
     orderBy: [{ vendor: "asc" }, { frameSku: "asc" }],
   });
@@ -192,6 +193,16 @@ export async function getOrderedFramesForVendor(
   });
 
   return rows.map(mapFrameToOrder);
+}
+
+export async function getVendorsWithOrderedFrames(): Promise<string[]> {
+  const rows = await prisma.frameToOrder.findMany({
+    where: { status: "Ordered" },
+    select: { vendor: true },
+    distinct: ["vendor"],
+    orderBy: { vendor: "asc" },
+  });
+  return rows.map((r) => r.vendor);
 }
 
 export async function getAllInHouseOrders(): Promise<Order[]> {
