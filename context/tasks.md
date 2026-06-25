@@ -167,6 +167,7 @@ Items that came up during development and should be addressed in future iteratio
 | 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
 | 2.2 | All Orders Page | Built `/all-orders` page with 11 KPI boxes in a 4-4-3 grid. Clicking a KPI filters the table below. Each KPI has its own filter logic and specific extra columns. Table is horizontally scrollable for wide views like "All". Also: moved frame received tracking from `Order.receivedAt` to `FrameToOrder.receivedDate`; added `frameStatus`, `frameOrderedDate`, `frameReceivedDate` fields to Order interface sourced from FrameToOrder relation. |
 | 4.1 | Button Label Changes | Frame List: "Order" button text no longer changes to "Ordered" when clicked. To Order lists: added "Ordered" button per row (writes `FrameToOrder.orderedDate` to DB via Server Action, navy fill when set) and "Remove" button per row (resets frame to "On List", clears `orderedDate`). Both buttons hidden from print. |
+| 4.1b | Frame/To Order Workflow Overhaul | Fully migrated Frame List and To Order list from localStorage to database. "Order" button sets `status='Ordered'` (moves to To Order list). "Ordered" button toggles `orderedDate`. "Frame List" button moves frame back (`status='On List'`). "Remove" sets `status='Removed'`, kept in DB. "Received" sets `status='Received'` + `receivedDate`. Right sidebar vendor links now DB-driven via server-fetched `getVendorsWithOrderedFrames()`. |
 
 ---
 
@@ -178,8 +179,5 @@ Items that came up during development and should be addressed in future iteratio
   - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
 - **Schema decision — frame received date:** `receivedAt` was removed from the Order table. Frame received date is now `FrameToOrder.receivedDate`. All queries needing this value JOIN to FrameToOrder. `getOrdersReadyForFrameBuild()` requires both `verifiedAt` (on Order) and `frameToOrder.receivedDate` to be set.
 
-# My Answers
-1. Lets tie it to the database and have it set status to "On List".
-2. Lets keep it in the DB for record-keeping for now.
 3. It should do status update and set receivedDate
 4. I don't understand fully. When selected that order should disappear from the To Order list its on and move back to the frame list under its vendor, so that when I then navigate to the Frame List from the To Order list I'm on, I see the order back there.

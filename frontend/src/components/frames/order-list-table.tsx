@@ -128,7 +128,7 @@ export function OrderListTable({ frames, vendor }: OrderListTableProps) {
                       <button
                         onClick={() => handleFrameList(frame)}
                         disabled={isLoading}
-                        className="px-3 py-1 text-xs rounded-md border border-primary-dark/40 text-primary-dark bg-transparent hover:bg-primary-dark/10 transition-colors disabled:opacity-50"
+                        className="px-3 py-1 text-xs rounded-md border border-primary-dark/40 text-primary-dark bg-transparent hover:bg-primary-dark/10 transition-colors disabled:opacity-50 whitespace-nowrap"
                       >
                         Frame List
                       </button>
