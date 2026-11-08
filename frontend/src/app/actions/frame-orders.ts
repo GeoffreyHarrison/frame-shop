@@ -24,7 +24,7 @@ export async function setFrameOrderedDate(frameId: string) {
     where: { id: frameId },
     data: { orderedDate: new Date() },
   })
-  revalidatePath('/order-lists/[vendor]', 'page')
+  revalidatePath('/', 'layout') // Frames to Build reads received/ordered dates
 }
 
 // "Ordered" button on To Order list — clears orderedDate (called when toggling OFF)
@@ -33,7 +33,7 @@ export async function clearFrameOrderedDate(frameId: string) {
     where: { id: frameId },
     data: { orderedDate: null },
   })
-  revalidatePath('/order-lists/[vendor]', 'page')
+  revalidatePath('/', 'layout') // Frames to Build reads received/ordered dates
 }
 
 // "Frame List" button on To Order list — moves frame back to Frame List

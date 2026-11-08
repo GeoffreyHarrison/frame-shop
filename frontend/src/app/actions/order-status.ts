@@ -27,10 +27,8 @@ export async function updateOrderStatus(orderId: string, status: StatusType) {
     include: { customer: true },
   })
 
-  // Revalidate order detail page and related pages
-  revalidatePath(`/framing-orders`)
-  revalidatePath(`/framing-orders/[date]`, 'layout')
-  revalidatePath(`/framing-orders/[date]/[orderId]`, 'layout')
+  // Status lives on many pages (daily detail, order lists, binventory, ...) — refresh them all
+  revalidatePath('/', 'layout')
 
   return updated
 }
@@ -47,27 +45,10 @@ export async function clearOrderStatus(orderId: string, status: StatusType) {
     include: { customer: true },
   })
 
-  // Revalidate order detail page and related pages
-  revalidatePath(`/framing-orders`)
-  revalidatePath(`/framing-orders/[date]`, 'layout')
-  revalidatePath(`/framing-orders/[date]/[orderId]`, 'layout')
+  // Status lives on many pages (daily detail, order lists, binventory, ...) — refresh them all
+  revalidatePath('/', 'layout')
 
   return updated
-}
-
-export async function getOrdersReadyForFrameBuild() {
-  // Ready to build = frame received (FrameToOrder.receivedDate set) AND verified, but not yet built
-  return await prisma.order.findMany({
-    where: {
-      verifiedAt: { not: null },
-      builtAt: null,
-      frameToOrder: {
-        receivedDate: { not: null },
-      },
-    },
-    include: { customer: true, frameToOrder: true },
-    orderBy: { dueDate: 'asc' },
-  })
 }
 
 export async function updateBinLocation(orderId: string, binLetter: string) {
@@ -77,8 +58,7 @@ export async function updateBinLocation(orderId: string, binLetter: string) {
     include: { customer: true },
   })
 
-  // Revalidate related pages
-  revalidatePath(`/framing-orders/[date]/[orderId]`, 'layout')
+  revalidatePath('/', 'layout')
 
   return updated
 }

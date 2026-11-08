@@ -112,7 +112,6 @@ async function main() {
         completedDate: parseDate(o.completedDate),
         binLocation: binLetter,
         // New status timestamp columns
-        receivedAt: receivedTime,
         verifiedAt: verifiedTime,
         tabledAt: tabledTime,
         builtAt: builtTime,
@@ -150,6 +149,31 @@ async function main() {
     });
   }
   console.log(`  Seeded ${framesToOrderData.length} frames to order`);
+
+  // Mark a few frames as Received so Frames to Build / Orders to Fit have data.
+  // First two stay unbuilt (Frames to Build); next two are tabled + built, not
+  // completed (Orders to Fit). All four orders are verified.
+  const received = await prisma.frameToOrder.findMany({ orderBy: { createdAt: "asc" }, take: 4 });
+  for (let i = 0; i < received.length; i++) {
+    const f = received[i];
+    await prisma.frameToOrder.update({
+      where: { id: f.id },
+      data: {
+        status: "Received",
+        orderedDate: f.orderedDate ?? new Date(now.getTime() - 5 * 86400000),
+        receivedDate: new Date(now.getTime() - 2 * 86400000),
+      },
+    });
+    const verifiedAt = new Date(now.getTime() - 3 * 86400000);
+    await prisma.order.update({
+      where: { id: f.orderId },
+      data:
+        i < 2
+          ? { verifiedAt, builtAt: null, completedAt: null, binLocation: null }
+          : { verifiedAt, tabledAt: verifiedAt, builtAt: now, completedAt: null, binLocation: null },
+    });
+  }
+  console.log(`  Marked ${received.length} frames as Received`);
 
   console.log("Done.");
 }

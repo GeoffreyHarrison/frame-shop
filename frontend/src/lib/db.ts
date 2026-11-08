@@ -321,3 +321,63 @@ export async function getCustomerById(
     orders: row.orders.map((o: any) => mapOrder({ ...o, customer: row })),
   };
 }
+
+// ─── Workflow list queries ──────────────────────────────────────────────────
+// Each list shares the same status columns and Server Actions as every other
+// page, so a status change anywhere shows up everywhere.
+
+const LIST_INCLUDE = { customer: true, comments: true, frameToOrder: true } as const;
+const LIST_ORDER_BY = [{ dueDate: "asc" as const }, { orderNumber: "asc" as const }];
+
+async function findOrderList(where: Record<string, unknown>): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    where,
+    include: LIST_INCLUDE,
+    orderBy: LIST_ORDER_BY,
+  });
+  return rows.map(mapOrder);
+}
+
+export function getOrdersToVerify() {
+  return findOrderList({ verifiedAt: null, pickedUpAt: null });
+}
+
+export function getOrdersToTable() {
+  return findOrderList({ verifiedAt: { not: null }, tabledAt: null, pickedUpAt: null });
+}
+
+// Verified, frame received from vendor, not yet built
+export function getFramesToBuild() {
+  return findOrderList({
+    verifiedAt: { not: null },
+    builtAt: null,
+    pickedUpAt: null,
+    frameToOrder: { receivedDate: { not: null } },
+  });
+}
+
+export function getOrdersToFit() {
+  return findOrderList({
+    verifiedAt: { not: null },
+    tabledAt: { not: null },
+    builtAt: { not: null },
+    completedAt: null,
+    pickedUpAt: null,
+  });
+}
+
+export function getMustHaveOrders() {
+  return findOrderList({ mustHaveStatus: { not: null }, pickedUpAt: null });
+}
+
+export function getDelayedOrders() {
+  return findOrderList({ delayedStatus: { not: null }, pickedUpAt: null });
+}
+
+export function getGlassList() {
+  return findOrderList({
+    completedAt: null,
+    pickedUpAt: null,
+    glass: { not: "No Glass" },
+  });
+}
