@@ -93,6 +93,7 @@ model Order {
 
   comments     Comment[]
   frameToOrder FrameToOrder?
+  matsToOrder  MatToOrder[]
 }
 
 model Comment {
@@ -119,4 +120,22 @@ model FrameToOrder {
   receivedDate DateTime?
   createdAt    DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// One row per mat (Top / Second / Third) on an order. Mat List state is per mat, not per order.
+// NOTE: when order create/edit is built, it must create, update or delete these rows
+// to match Order.topMat / secondMat / thirdMat.
+model MatToOrder {
+  id           String    @id @default(cuid())
+  orderId      String
+  order        Order     @relation(fields: [orderId], references: [id])
+  position     String    // "Top" | "Second" | "Third"
+  matSku       String    // snapshot of Order.topMat / secondMat / thirdMat
+  status       String    @default("On List") // "On List" | "Received" | "Removed"
+  orderedDate  DateTime? // "Order" button toggle on the Mat List
+  receivedDate DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([orderId, position])
 }

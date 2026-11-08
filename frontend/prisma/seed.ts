@@ -17,6 +17,7 @@ async function main() {
   console.log("Seeding database...");
 
   // Clear existing data in correct order to avoid FK violations
+  await prisma.matToOrder.deleteMany();
   await prisma.frameToOrder.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.order.deleteMany();
@@ -129,6 +130,18 @@ async function main() {
       },
     });
     orderIdMap[o.id] = created.id;
+
+    // One MatToOrder row per non-empty mat (Mat List state is per mat)
+    const mats = [
+      ["Top", o.topMat],
+      ["Second", o.secondMat],
+      ["Third", o.thirdMat],
+    ].filter(([, sku]) => sku);
+    for (const [position, matSku] of mats) {
+      await prisma.matToOrder.create({
+        data: { orderId: created.id, position, matSku },
+      });
+    }
   }
   console.log(`  Seeded ${Object.keys(orderIdMap).length} orders with varied status timestamps`);
 
