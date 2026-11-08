@@ -148,3 +148,20 @@ export interface FrameToOrder {
   orderedDate?: string;
   receivedDate?: string; // when frame arrived from vendor
 }
+
+export type MatPosition = "Top" | "Second" | "Third";
+
+// One mat on an order (Mat List / Received Mats). Order fields are denormalized for display.
+export interface MatToOrder {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  itemCount: number;
+  dueDate: string;
+  frameSize: string;
+  position: MatPosition;
+  matSku: string;
+  status: "On List" | "Received" | "Removed";
+  orderedDate?: string;
+  receivedDate?: string;
+}

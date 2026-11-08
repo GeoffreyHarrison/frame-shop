@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import type { Order, Customer, FrameToOrder, OrdersByDay } from "./types";
+import type { Order, Customer, FrameToOrder, OrdersByDay, MatToOrder } from "./types";
 import { getDayName } from "./due-date";
 
 function toDateStr(date: Date): string {
@@ -381,3 +381,54 @@ export function getGlassList() {
     glass: { not: "No Glass" },
   });
 }
+
+// ─── Mat List ───────────────────────────────────────────────────────────────
+
+const MAT_POSITION_RANK: Record<string, number> = { Top: 0, Second: 1, Third: 2 };
+
+type MatRow = {
+  id: string;
+  orderId: string;
+  position: string;
+  matSku: string;
+  status: string;
+  orderedDate: Date | null;
+  receivedDate: Date | null;
+  order: { orderNumber: string; itemCount: number; dueDate: Date; frameSize: string };
+};
+
+function mapMatToOrder(row: MatRow): MatToOrder {
+  return {
+    id: row.id,
+    orderId: row.orderId,
+    orderNumber: row.order.orderNumber,
+    itemCount: row.order.itemCount,
+    dueDate: toDateStr(row.order.dueDate),
+    frameSize: row.order.frameSize,
+    position: row.position as MatToOrder["position"],
+    matSku: row.matSku,
+    status: row.status as MatToOrder["status"],
+    orderedDate: toDateStrOrUndefined(row.orderedDate),
+    receivedDate: toDateStrOrUndefined(row.receivedDate),
+  };
+}
+
+async function findMats(status: "On List" | "Received"): Promise<MatToOrder[]> {
+  const rows = await prisma.matToOrder.findMany({
+    where: { status, order: { pickedUpAt: null } },
+    include: { order: true },
+  });
+  // Prisma can't sort by a custom position order, so sort here:
+  // due date, then order #, then Top / Second / Third
+  return rows
+    .sort(
+      (a, b) =>
+        a.order.dueDate.getTime() - b.order.dueDate.getTime() ||
+        a.order.orderNumber.localeCompare(b.order.orderNumber) ||
+        (MAT_POSITION_RANK[a.position] ?? 9) - (MAT_POSITION_RANK[b.position] ?? 9)
+    )
+    .map(mapMatToOrder);
+}
+
+export const getMatList = () => findMats("On List");
+export const getReceivedMats = () => findMats("Received");
