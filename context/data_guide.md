@@ -135,7 +135,6 @@ These DateTime fields track when each status was set. `null` means the status ha
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `receivedAt` | DateTime | Timestamp when frame was received from vendor |
 | `verifiedAt` | DateTime | Timestamp when order was verified (measurements confirmed) |
 | `tabledAt` | DateTime | Timestamp when mats were cut and mounted |
 | `builtAt` | DateTime | Timestamp when frame was assembled and glass installed |
@@ -143,6 +142,8 @@ These DateTime fields track when each status was set. `null` means the status ha
 | `pickedUpAt` | DateTime | Timestamp when customer picked up the order |
 | `mustHaveStatus` | DateTime | Timestamp when marked as high-priority/must-have |
 | `delayedStatus` | DateTime | Timestamp when marked as delayed |
+
+> **Note:** Frame received date is NOT on the Order table. It lives on `FrameToOrder.receivedDate` — see the FrameToOrder section below.
 
 #### Other Fields
 
@@ -195,18 +196,46 @@ Tracks frame inventory that needs to be ordered from vendors. Separate from orde
 | `size` | String | ✓ | Frame size (e.g., "16x20") |
 | `qty` | Int | ✓ | Quantity to order |
 | `vendor` | String | ✓ | Vendor name: "Larson Juhl", "Decor Moulding", "Roma Moulding", or "Bella Moulding" |
-| `status` | String | ✓ | Order status: "On List", "Ordered", or "Received" (default: "On List") |
-| `orderedDate` | DateTime | | When the frame was ordered from vendor |
+| `status` | String | ✓ | Frame status: "On List", "Ordered", "Received", or "Removed" (default: "On List") |
+| `orderedDate` | DateTime | | When the frame was ordered from the vendor (set when "Ordered" button clicked) |
+| `receivedDate` | DateTime | | When the frame arrived from the vendor (set when "Received" button clicked) |
 | `createdAt` | DateTime | ✓ | When this record was created (auto-set) |
 | `updatedAt` | DateTime | ✓ | When this record was last updated (auto-updated) |
 
 **Relationships:**
 - Belongs to one `Order` (via `orderId`)
 
+**Status flow:**
+- `"On List"` — frame appears on the Frame List page, needs to be ordered
+- `"Ordered"` — "Order" button clicked, frame moves to the vendor's To Order list; "Ordered" button toggles `orderedDate`
+- `"Received"` — "Received" button clicked on the To Order list, frame arrived from vendor; sets `receivedDate`
+- `"Removed"` — "Remove" button clicked on the To Order list, frame pulled from ordering without receiving; stays in DB for record-keeping
+
 **Notes:**
-- One order can have one frame-to-order record (one-to-one relationship)
-- Used by the Frame List to show frames that need ordering
-- When a frame is marked "Ordered", it moves to vendor-specific order lists
+- One order can have at most one FrameToOrder record (one-to-one)
+- Used by the Frame List (`/frames-to-order`) and per-vendor order lists (`/order-lists/[vendor]`)
+- Frame received date (`receivedDate`) was previously on the Order table as `receivedAt` — it was moved here
+
+### MatToOrder
+
+One row per mat (Top / Second / Third) on an order. Mat List state is per mat, not per order. Mirrors `FrameToOrder`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | ✓ | Unique identifier (auto-generated) |
+| `orderId` | String | ✓ | Foreign key to Order |
+| `position` | String | ✓ | "Top", "Second" or "Third" |
+| `matSku` | String | ✓ | Snapshot of `Order.topMat` / `secondMat` / `thirdMat` when the row was created |
+| `status` | String | ✓ | "On List", "Received" or "Removed" (default: "On List") |
+| `orderedDate` | DateTime | | Set/cleared by the "Order" button on the Mat List |
+| `receivedDate` | DateTime | | Set by "Mat Received"; cleared by "Return" |
+| `createdAt` / `updatedAt` | DateTime | ✓ | Auto-managed |
+
+**Constraints:** unique on (`orderId`, `position`).
+
+**Status flow:** "On List" → "Mat Received" → "Received" (→ "Return" back to "On List", or "Remove" → "Removed", a soft delete with no restore yet).
+
+**IMPORTANT:** there is no order create/edit form yet. When one is built, it **must create, update or delete `MatToOrder` rows** to match the mat fields on the order. What happens when a mat SKU changes after it was already received is not handled yet.
 
 ---
 
@@ -233,34 +262,59 @@ Tracks frame inventory that needs to be ordered from vendors. Separate from orde
 Customer (1) ──────── (Many) Order
                          │
                          ├── (Many) Comment
-                         └── (0-1) FrameToOrder
+                         ├── (0-1) FrameToOrder
+                         └── (Many) MatToOrder
 ```
 
 - Each **Customer** can have multiple **Orders**
 - Each **Order** can have multiple **Comments**
 - Each **Order** can have zero or one **FrameToOrder** (for frame sourcing)
+- Each **Order** can have up to three **MatToOrder** rows (Top, Second, Third)
 
 ---
 
 ## Common Queries
 
 ### Get all orders for a customer
-Requires: `customerId`
+Filter: `customerId` matches
 
-### Get all pending orders (not yet completed)
-Filter: `completedAt IS NULL`
+### Get all pending orders (not yet picked up)
+Filter: `pickedUpAt IS NULL`
 
-### Get orders ready for pickup
+### Get orders ready for pickup (Binventory)
 Filter: `completedAt IS NOT NULL AND pickedUpAt IS NULL`
 
 ### Get orders due on a specific date
-Filter: `dueDate` matches the date
+Filter: `dueDate` within that day's UTC range
 
-### Get orders created on a specific date
-Filter: `orderCreatedAt` matches the date
+### Get orders created on a specific date (Daily Summaries)
+Filter: `orderCreatedAt` within that day's UTC range
 
-### Get orders completed on a specific date
-Filter: `completedAt` matches the date
+### Get orders completed on a specific date (Daily Summaries)
+Filter: `completedAt` within that day's UTC range
+
+### Search orders (Order Search page)
+Filter: `orderNumber` contains query OR `customer.firstName` contains query OR `customer.lastName` contains query OR `customer.phone` contains query (all case-insensitive)
+Sort: `pickedUpAt nulls first`, then `orderNumber asc`
+
+### Workflow list pages
+All exclude `pickedUpAt IS NOT NULL`; sorted by `dueDate asc`, then `orderNumber asc`. No filter on order type.
+- **Orders to Verify** (`getOrdersToVerify`): `verifiedAt IS NULL`
+- **Orders to Table** (`getOrdersToTable`): `verifiedAt NOT NULL AND tabledAt IS NULL`
+- **Frames to Build** (`getFramesToBuild`): `verifiedAt NOT NULL AND builtAt IS NULL AND frameToOrder.receivedDate NOT NULL`
+- **Orders to Fit** (`getOrdersToFit`): verified, tabled and built, `completedAt IS NULL`
+- **Must Have Orders** (`getMustHaveOrders`): `mustHaveStatus NOT NULL`
+- **Delayed Orders** (`getDelayedOrders`): `delayedStatus NOT NULL`
+- **Glass List** (`getGlassList`): `completedAt IS NULL AND glass != "No Glass"`
+
+### Mat List / Received Mats
+Filter on MatToOrder: `status = "On List"` (or `"Received"`) AND `order.pickedUpAt IS NULL`. Sorted in JS by order due date, order #, then Top/Second/Third (`getMatList`, `getReceivedMats`).
+
+### Get frames on the Frame List
+Filter on FrameToOrder: `status = "On List"`
+
+### Get frames on a vendor's To Order list
+Filter on FrameToOrder: `status = "Ordered" AND vendor = "Larson Juhl"` (etc.)
 
 ---
 

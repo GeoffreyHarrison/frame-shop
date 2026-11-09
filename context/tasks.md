@@ -1,165 +1,123 @@
-# Frame Shop App — Project Tasks
 
-Structured task list converted from loose notes in CLAUDE.md (Project Updates → Tasks section).
-
----
-
-## Phase 1: Core Status & Workflow
-
-### 1.2 Picked Up Button — Order Search (Remaining)
-**Status:** In Progress — Order Details & Binventory done; Order Search view still needed
-**Description:**
-The "Picked Up" button exists on Order Details and Binventory pages. It still needs to be added to the Order Search results (Task 2.4). When built, the button should:
-- Set `pickedUpAt` timestamp in database
-- Remove order from Binventory list
-- Display prominently in search results
-
-**Acceptance Criteria (remaining):**
-- Picked Up button appears in Order Search results
-- Clicking marks order as picked up in database
-- Order disappears from Binventory
-
----
-
-## Phase 2: New Pages & Features
-
-### 2.4 Search Order Functionality
-**Status:** Complete
-**Description:**
-Wire up the search box in the left panel (under "Current Orders") to return real order results.
-
-**Search Behavior:**
-- Magnifying glass icon or pressing Enter initiates search
-- Clicking magnifying glass with empty input returns all orders, sorted: non-picked-up first, then by order number ascending
-- Searchable by: order number, first name, last name, phone number
-
-**Results Table Columns:**
-- Order #
-- Last Name
-- First Name
-- Bin (editable input field)
-- Frame SKU
-- Date (order taken)
-- Verify button (toggles verified status, reflects `verifiedAt`)
-- Picked Up button (sets `pickedUpAt`, same as Binventory)
-
-**Row Detail:**
-- Secondary row below each result showing staffer-inputted frame description
-
-**Acceptance Criteria:**
-- Search returns matching orders
-- All columns display correctly
-- Verify button is clickable and syncs with database
-- Picked Up button works and removes order from Binventory
-- Staffer frame description shows on secondary row
-- Bin letter field is editable and saves to database
-- Empty search returns all orders sorted correctly
-
----
-
----
-
-## Phase 3: Supporting Lists
-
-### 3.1 Mat List
-**Status:** Lower priority
-**Description:**
-Create Mat List page showing available mats, organized similar to Frame List.
-
-**Acceptance Criteria:**
-- Page displays mats in logical grouping (by type/vendor or similar)
-- Styled consistently with Frame List
-- Accessible from left panel
-
----
-
-### 3.2 Glass List
-**Status:** Lower priority
-**Description:**
-Create Glass List page showing available glass options.
-
-**Acceptance Criteria:**
-- Page displays glass options in logical grouping
-- Styled consistently with Frame List
-- Accessible from left panel
-
----
-
-### 3.3 Supply List
-**Status:** Deferred — Not building immediately
-**Description:**
-List of regular supplies sorted by team-defined parameters. Include order buttons that route to specific vendor lists. Will need backend to let team update the supply list.
-
----
-
-## Phase 4: Minor UI Fixes & Text Updates
-
----
-
-## Audit & Cleanup
-
-### 5.1 Functionality Audit
-**Status:** Before next major phase
-**Description:**
-Create comprehensive list of all current implemented functionality (pages, buttons, data flow, status tracking). Helps align remaining data model changes with what the app currently does.
-
-**Acceptance Criteria:**
-- Documented list of all working features
-- Documented list of partially-working features
-- Documented list of data model gaps
-- Identified misalignments between UI functionality and database structure
-
----
-
-## Outstanding Client Questions
-
-1. **Remove button & orderedDate** — If a frame is removed from the To Order list via the "Remove" button but the "Ordered" button was never clicked (so `orderedDate` is null), should we record an `orderedDate` at the time "Remove" is clicked? This would help with tracking whether a frame was ordered before being pulled from stock. Confirm with client before implementing.
-
----
-
-## Backlog & Known Issues
-
-Items that came up during development and should be addressed in future iterations.
-
-1. **Frame Received status display** — Show contextual text based on frame status:
-   - "Frame not ordered" — frame not yet on Frame List
-   - "Frame ordered but not received" — on Frame List but not received
-   - Show date when received
-   - **Status:** Not yet implemented
-
-2. **Order Details panel width** — Section containers should stretch further right; spacing should be symmetric on both sides.
-   - **Status:** Not yet implemented
-
-3. **Comments author capture** — `author` field exists in DB but not captured from UI; needs to tie to logged-in user or a name input.
-   - **Status:** Partially implemented
-
----
-
-## Completed Tasks
-
-| # | Task | Description |
-|---|------|-------------|
-| 1.1 | Order Status Tracking Infrastructure | Migrated all status buttons from localStorage to database. Added 7 timestamp columns (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `pickedUpAt`, `mustHaveStatus`, `delayedStatus`) to Order schema. Created Server Actions in `src/app/actions/order-status.ts`. Note: `receivedAt` was initially added here then moved — see schema note below. |
-| 2.1 | Daily Summaries Page | Built `/daily-summaries` page with 3 KPI boxes (Orders Taken, Completed, Picked Up), 3 filtered tables, and a calendar selector. Added `orderCreatedAt` timestamp to Order schema. API route at `/api/daily-summaries`. |
-| 2.3 | Binventory Page | Built `/binventory` page showing completed-but-not-picked-up orders. Table with Bin, Order #, Qty, Customer Name, Contact, Due Date, and Picked Up button. Sort options (bin, due date, order #, customer name, asc/desc). |
-| 4.2 | Bin Location Input | Fixed visual styling (no gap between parentheses, dynamic width expansion, no character cutoff). Fixed persistence bug — bin location now saves to database at any point in workflow, not just when order is completed. |
-| 2.2 | All Orders Page | Built `/all-orders` page with 11 KPI boxes in a 4-4-3 grid. Clicking a KPI filters the table below. Each KPI has its own filter logic and specific extra columns. Table is horizontally scrollable for wide views like "All". Also: moved frame received tracking from `Order.receivedAt` to `FrameToOrder.receivedDate`; added `frameStatus`, `frameOrderedDate`, `frameReceivedDate` fields to Order interface sourced from FrameToOrder relation. |
-| 4.1 | Button Label Changes | Frame List: "Order" button text no longer changes to "Ordered" when clicked. To Order lists: added "Ordered" button per row (writes `FrameToOrder.orderedDate` to DB via Server Action, navy fill when set) and "Remove" button per row (resets frame to "On List", clears `orderedDate`). Both buttons hidden from print. |
-| 2.5 | Customer Directory | Built `/customers` directory page (alphabetical, client-side search by name/phone/email, New Customer modal), `/customers/[id]` detail page (all fields + order history), `/customers/[id]/edit` full-page edit. Top bar User icon and search wired to `/customers`. Required fields: First Name, Last Name, Phone, Contact Method. |
-| 2.4 | Search Order Functionality | Wired up left panel "Current Orders" search box. Added `searchOrders` Prisma query (searches orderNumber, firstName, lastName, phone; empty query returns all orders sorted non-picked-up first then by orderNumber). Created `/order-search` page and `OrderSearchTable` component with columns: Order #, Last Name, First Name, Bin (editable), Frame SKU, Date Taken, Verify button, Picked Up button. Secondary row shows frameNotes when present. Added `customerFirstName`/`customerLastName` to Order type and mapOrder. |
-| 4.1b | Frame/To Order Workflow Overhaul | Fully migrated Frame List and To Order list from localStorage to database. "Order" button sets `status='Ordered'` (moves to To Order list). "Ordered" button toggles `orderedDate`. "Frame List" button moves frame back (`status='On List'`). "Remove" sets `status='Removed'`, kept in DB. "Received" sets `status='Received'` + `receivedDate`. Right sidebar vendor links now DB-driven via server-fetched `getVendorsWithOrderedFrames()`. |
-
----
-
-## Notes
-
-- **Data Model:** Several tasks depend on finalizing the data schema with the client — confirm fields before building 2.2
-- **UI Refinement:** Tasks in Phase 4 are quick wins that can be done in parallel with Phase 2–3 work
-- **Planning Documents:** Created for complex tasks; delete after task completion
-  - `context/planning/order_status_tracking.md` — Task 1.1 (can be deleted)
-- **Schema decision — frame received date:** `receivedAt` was removed from the Order table. Frame received date is now `FrameToOrder.receivedDate`. All queries needing this value JOIN to FrameToOrder. `getOrdersReadyForFrameBuild()` requires both `verifiedAt` (on Order) and `frameToOrder.receivedDate` to be set.
+# Project Tasks
+This document servers to list out tasks that an agent can then use to develop a more in depth plan and place it in context/agent_tasks.md. If that document does not exist, please create it. If it exist and content is in it, please remove the old content then populate it with the new content.
 
 
-# Notes to Self
-- Need to add new order button to customer page and customer directory rows
-- Need to remove Customer Type for now from the customer directory
+## Tasks
+Below are tasks that each correspond to a different area of the app that can be reached by using the links on the left side panel menu. Any work on these tasks should take into consideration the current theming of the app we have set up so far.
+
+
+### Task 1: Orders to Verify
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Orders to Verify" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Customer Name (customer's First and Last name)
+ - Due Date
+ - Verify (this column will have verify buttons that can be selected to indicate an order on the list is now verfied)
+
+The table should be sorted by due date, ascending from the earliest due date to the latest. If an order is verfied, from the buttons on the list or anywhere else a verfify button for that order exists and is clicked, the order should fall off. So the verify buttons on the list will need to work with other verify buttons in the app (like in the order details page). If an order is marked unverfied (the button is clicked again after being verfied) it goes back on the list and is sorted according to due date. When new orders are created, they should automatically appear here until they are "Verfied" through use of a verify button in the app associated with that order.
+
+### Task 2: Orders to Table
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Orders to Table" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Customer Name (customer's First and Last name)
+ - Due Date
+ - Mounting (type of mounting)
+ - Description (order description - can be found on order details page as well)
+ - Table (this column will have table buttons that can be selected to indicate an order on the list is now tabled)
+
+The table should be sorted by due date, ascending from the earliest due date to the latest. If an order is tabled, from the buttons on the list or anywhere else a table button for that order exists and is clicked, the order should fall off. So the table buttons on the list will need to work with other table buttons in the app (like in the order details page). If an order is marked untabled (the button is clicked again after being tabled) it goes back on the list and is sorted according to due date. The main criteria for orders that go on this list is:
+   1. The order is verified
+   2. The order is not tabled
+
+
+### Task 3: Frames to Build
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Frames to Build" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Due Date
+ - Frame Ordered Date (from the vendor specific To Order: pages - when marked Ordered this the Frame Ordered Date)
+ - Frame Received Date (from the Frame List page - when marked Received this is the Frame Received Date)
+ - Frame SKU
+ - Frame Description
+ - Frame Size
+ - Footage
+ - Frame Built (this column will have frame built buttons that can be selected to indicate an order on the list now has the frame built)
+
+The table should be sorted by due date, ascending from the earliest due date to the latest. If an order is Frame Built, from the buttons on the list or anywhere else a Frame Built button for that order exists and is clicked, the order should fall off. So the Frame Built buttons on the list will need to work with other Frame Built buttons in the app (like in the order details page). If an order is de-marked (the button is clicked again after being Frame Built) it goes back on the list and is sorted according to due date. The main criteria for orders that go on this list is:
+   1. The order is verified
+   2. The order has had its Frame Received
+   3. The order is not marked as Frame Built
+
+
+### Task 4: Orders to Fit
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Orders to Fit" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Customer Name (customer's First and Last name)
+ - Due Date
+ - Description (order description - can be found on order details page as well)
+ - Completed (this column will have Completed buttons that can be selected to indicate an order on the list now has is Completed)
+
+The table should be sorted by due date, ascending from the earliest due date to the latest. If an order is Completed, from the buttons on the list or anywhere else a Completed button for that order exists and is clicked, the order should fall off. So the Completed buttons on the list will need to work with other Completed buttons in the app (like in the order details page). If an order is de-marked (the button is clicked again after being Completed) it goes back on the list and is sorted according to due date. The main criteria for orders that go on this list is:
+   1. The order is verified
+   2. The order has been Tabled
+   3. The order has been marked as Frame Built
+
+
+### Task 5: Must Have Orders
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Must Have Orders" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Customer Name (customer's First and Last name)
+ - Due Date
+ - Description (order description - can be found on order details page as well)
+ - Must Have (this column will have Must Have buttons that should all show selected since that is how they got on the list - de-selecting this button will remove it from the list. It should be styled the same as the Must Have button in other locations)
+ - Delayed (this column will have Delayed buttons - these should work alongside the other instances of the Delayed button for this order - marking it or unmarking does not impact if an order should fall from or stay on this list)
+
+The table should be sorted by due date, ascending from the earliest due date to the latest. If an order is marked as Must Have, from anywhere a Must Have button exists and is clicked, the order should be included on this list. If they are de-selected then the order should fall off. So the Must Have buttons on the list will need to work with other Must Have buttons in the app (like in the order details page). The main criteria for orders that go on this list is:
+   1. The order is marked as Must Have
+   2. The order has not been marked Picked Up
+
+### Task 6: Delayed Orders
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Delayed Orders" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Customer Name (customer's First and Last name)
+ - Due Date
+ - Description (order description - can be found on order details page as well)
+ - Delayed (this column will have Delayed buttons that should all show selected since that is how they got on the list - de-selecting this button will remove it from the list. It should be styled the same as the Delayed button in other locations)
+ - Must Have (this column will have Must Have buttons - these should work alongside the other instances of the Must Have button for this order - marking it or unmarking does not impact if an order should fall from or stay on this list)
+
+The table should be sorted by due date, ascending from the earliest due date to the latest. If an order is marked as Delayed, from anywhere a Delayed button exists and is clicked, the order should be included on this list. If they are de-selected then the order should fall off. So the Delayed buttons on the list will need to work with other Delayed buttons in the app (like in the order details page). The main criteria for orders that go on this list is:
+   1. The order is marked as Delayed
+   2. The order has not been marked Picked Up
+
+### Task 7: Mat List
+This section is navigated to from the right side panel button called "Mat List".
+
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Mat List" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. To the left of that should be a button called "Received Mats". More on that below. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Due Date
+ - Size
+ - Mat Indicator (Shows whether this is the Top, Second, or Third Mat for an order - more on this below)
+ - Mat SKU
+ - "Mat Received" button
+ - "Order" button (not working on the functionality for this now - just make it behave like other order buttons when clicked and un-clicked)
+
+This table should be sorted by Due Date then Order #. Becuase Orders can up to 3 mats, there will be up to three rows per orders that have mats. When an order gets a value for its Top mat then it should get a row where the Mat Indicator is "Top" and the Sku is the Top mat value. If it has a Second mat value then it will get an additional row where the Mat Indicator is "Second" and the Sku is the Second mat value. If it has a Third mat value then it will get an additional row where the Mat Indicator is "Third" and the Sku is the Third mat value. If the order only has a Top mat then it will only have 1 row.
+
+When you mark the "Mat Received" button on the table, the order falls off and goes to the "Received Mats" list. The Recieved Mats list will be a new page, that can be navigated to from the "Received Mats" button above the table. It will look very similar to the Mat List but with a "Received Mats" heading above the table and instead of a "Mat Received" button and an "Order" button, it will have a "Return" buttona and a "Remove" button. If "Returned" is selected then that row goes back to the Mat List. If "Remove" is selected a pop up appears asking the user if they are sure they want to remove that order from the list with "Yes" and "No" button options. "Yes" removes it from the list and "No" makes the pop-up modal dissapear and the user is back on the "Received Mats" list.
+
+### Task 8: Glass List
+This section is navigated to from the right side panel button called "Glass List".
+
+This page will populate the main panel with a table similar to the vendor order pages where the top of the panel will have a heading called "Glass List" with a table underneath. Right above the right side of the table, similar to how we have it on the vendor order pages, there will be a download button that will print the table to pdf. The table itself will have the dark blue header row with the banded rows for each order. The columns will be:
+ - Order #
+ - Qty (order quantity)
+ - Due Date
+ - Size
+ - Glass (from Order Details)
+ - Mounting (from Order Details)

@@ -8,7 +8,7 @@ A practical guide to understanding, navigating, and extending this project. Writ
 
 A web app for a custom framing shop to manage the lifecycle of framing orders — from order entry, through verification, framing, and fitting, to customer pickup. It also tracks the frames/mats/glass that need to be ordered from vendors.
 
-Right now the app is **frontend-heavy with a real database behind it**. The pages read live data from PostgreSQL. Some interactive buttons still save their state in the browser (more on that in Section 9).
+The app is **fully deployed**: it runs on Vercel, backed by a Neon-hosted PostgreSQL database. Every page reads live data from the database and all interactive buttons save state back to it — there is no longer any localStorage-based persistence.
 
 ---
 
@@ -44,33 +44,59 @@ frame-shop/
     ├── prisma/
     │   ├── schema.prisma      ← THE DATABASE SHAPE — defines all tables
     │   ├── migrations/        ← Auto-generated SQL history of schema changes
-    │   └── seed.ts            ← Script that loads dummy data into the DB
+    │   ├── seed.ts            ← Script that loads dummy data into the DB
+    │   └── backfill-mats.ts   ← One-off: creates MatToOrder rows from existing orders
     └── src/
         ├── app/               ← PAGES & ROUTES (URL structure lives here)
         │   ├── page.tsx       ← "/" — just redirects to /framing-orders
         │   ├── layout.tsx     ← The shell wrapping every page (top bar + sidebars)
         │   ├── globals.css    ← Global styles, color theme, print styles
+        │   ├── actions/
+        │   │   ├── order-status.ts  ← Update order status, bin location, etc.
+        │   │   ├── customers.ts     ← Create/update customer records
+        │   │   ├── frame-orders.ts  ← Frame ordering actions (Order/Ordered/Received/Remove)
+        │   │   └── mat-orders.ts    ← Mat List actions (Received/Return/Remove/Order)
         │   ├── framing-orders/
         │   │   ├── page.tsx                    ← /framing-orders (orders by day)
         │   │   └── [date]/
         │   │       ├── page.tsx                ← /framing-orders/2026-05-25 (daily detail)
         │   │       └── [orderId]/page.tsx      ← .../ord-id (single order details)
+        │   ├── all-orders/page.tsx             ← /all-orders (11 KPI boxes + filtered table)
+        │   ├── binventory/page.tsx             ← /binventory (completed orders awaiting pickup)
+        │   ├── daily-summaries/page.tsx        ← /daily-summaries (KPIs + calendar)
+        │   ├── customers/
+        │   │   ├── page.tsx                    ← /customers (alphabetical directory)
+        │   │   └── [id]/
+        │   │       ├── page.tsx                ← /customers/abc123 (customer detail + orders)
+        │   │       └── edit/page.tsx           ← /customers/abc123/edit
         │   ├── frames-to-order/page.tsx        ← /frames-to-order (the Frame List)
-        │   └── order-lists/[vendor]/page.tsx   ← /order-lists/larson-juhl (per-vendor)
+        │   ├── orders-to-verify/page.tsx       ← workflow list pages (all use components/order-lists/)
+        │   ├── orders-to-table/page.tsx
+        │   ├── frames-to-build/page.tsx
+        │   ├── orders-to-fit/page.tsx
+        │   ├── must-have-orders/page.tsx
+        │   ├── delayed-orders/page.tsx
+        │   ├── glass-review/page.tsx           ← /glass-review (the Glass List)
+        │   ├── mats-to-order/page.tsx          ← /mats-to-order (the Mat List)
+        │   ├── mats-to-order/received/page.tsx ← /mats-to-order/received
+        │   ├── order-lists/[vendor]/page.tsx   ← /order-lists/larson-juhl (per-vendor)
+        │   └── order-search/page.tsx           ← /order-search (order search results)
         ├── components/        ← REUSABLE UI PIECES
         │   ├── layout/        ← top-bar, left-sidebar, right-sidebar
         │   ├── framing-orders/← tables & dialogs for orders
         │   ├── frames/        ← tables for the frame-ordering flow
-        │   └── ui/            ← small shared bits (search-input)
-        ├── app/actions/       ← SERVER ACTIONS (button-click handlers that touch the database)
-        │   └── order-status.ts ← Update order status, bin location, etc.
+        │   ├── all-orders/    ← KPI boxes and table for All Orders page
+        │   ├── binventory/    ← table for Binventory page
+        │   ├── order-lists/   ← shared list-page pieces: header/print button, status toggle, workflow + mat tables
+        │   ├── customers/     ← directory, detail, edit, and new-customer modal
+        │   ├── daily-summaries/ ← KPI boxes and tables for Daily Summaries
+        │   ├── order-search/  ← results table for Order Search page
+        │   └── ui/            ← small shared bits (search-input, etc.)
         ├── lib/               ← LOGIC & HELPERS (no UI)
         │   ├── prisma.ts      ← Creates the database connection (used by db.ts)
         │   ├── db.ts          ← All database queries live here
         │   ├── types.ts       ← TypeScript shapes for Order, Customer, etc.
-        │   ├── due-date.ts    ← Date formatting helpers
-        │   ├── order-statuses.ts ← Browser-storage logic (legacy, being phased out)
-        │   └── vendor-orders.ts  ← Browser-storage logic (legacy, being phased out)
+        │   └── due-date.ts    ← Date formatting helpers
         ├── data/              ← Original dummy JSON (now only used to seed the DB)
         └── generated/prisma/  ← Auto-generated Prisma code (don't edit; not in git)
 ```
@@ -89,10 +115,23 @@ In Next.js App Router, **folders inside `src/app/` become URLs**. A file named `
 | Folder path | URL |
 |-------------|-----|
 | `app/framing-orders/page.tsx` | `/framing-orders` |
-| `app/frames-to-order/page.tsx` | `/frames-to-order` |
 | `app/framing-orders/[date]/page.tsx` | `/framing-orders/2026-05-25` |
+| `app/framing-orders/[date]/[orderId]/page.tsx` | `/framing-orders/2026-05-25/abc123` |
+| `app/all-orders/page.tsx` | `/all-orders` |
+| `app/binventory/page.tsx` | `/binventory` |
+| `app/daily-summaries/page.tsx` | `/daily-summaries` |
+| `app/customers/page.tsx` | `/customers` |
+| `app/customers/[id]/page.tsx` | `/customers/abc123` |
+| `app/customers/[id]/edit/page.tsx` | `/customers/abc123/edit` |
+| `app/frames-to-order/page.tsx` | `/frames-to-order` |
+| `app/orders-to-verify/page.tsx` | `/orders-to-verify` (also `orders-to-table`, `frames-to-build`, `orders-to-fit`, `must-have-orders`, `delayed-orders`) |
+| `app/glass-review/page.tsx` | `/glass-review` |
+| `app/mats-to-order/page.tsx` | `/mats-to-order` |
+| `app/mats-to-order/received/page.tsx` | `/mats-to-order/received` |
+| `app/order-lists/[vendor]/page.tsx` | `/order-lists/larson-juhl` |
+| `app/order-search/page.tsx` | `/order-search?q=smith` |
 
-**Square brackets = a variable part of the URL.** `[date]` means "anything here is captured as a value called `date`." So `/framing-orders/2026-05-25` gives the page `date = "2026-05-25"`. This is how one file serves every day's detail page. Same idea for `[orderId]` and `[vendor]`.
+**Square brackets = a variable part of the URL.** `[date]` means "anything here is captured as a value called `date`." So `/framing-orders/2026-05-25` gives the page `date = "2026-05-25"`. This is how one file serves every day's detail page. Same idea for `[orderId]`, `[vendor]`, and `[id]`.
 
 `layout.tsx` is special: it wraps *every* page with the shared shell (top bar, left sidebar, right sidebar). The page content gets dropped into the `{children}` slot. That's why you don't repeat the sidebars on every page.
 
@@ -253,34 +292,28 @@ Then open **http://localhost:3000** — the app auto-redirects to `/framing-orde
 
 ## 9. Current State & What's Left
 
-### What's working
-- ✅ All pages read live from PostgreSQL.
-- ✅ Customers, orders, comments, and frames-to-order are seeded and queryable.
-- ✅ Navigation, layout, styling, and the order/frame views are built out.
-- ✅ **Status buttons (verified / tabled / built / completed / must-have / delayed) now sync with the database via Server Actions.** These are no longer localStorage-only.
+### What's working — all database-backed
+- ✅ **All pages read live from PostgreSQL** — no dummy data, no localStorage.
+- ✅ **Order Status Tracking** — all 8 status buttons (verified/tabled/built/completed/pickedUp/mustHave/delayed/bin) save timestamps to the database via Server Actions.
+- ✅ **Frame Ordering Workflow** — fully database-backed: Order button → To Order list → Ordered button → Received button, including per-vendor right-panel links.
+- ✅ **Binventory page** (`/binventory`) — shows completed orders awaiting pickup, with sort options and Picked Up button.
+- ✅ **All Orders page** (`/all-orders`) — 11 KPI boxes (Verified, Tabled, Built, etc.) that filter the table when clicked.
+- ✅ **Daily Summaries page** (`/daily-summaries`) — 3 KPIs (Orders Taken, Completed, Picked Up) with a calendar date picker.
+- ✅ **Customer Directory** (`/customers`) — alphabetical list with search, New Customer modal, detail page, and full edit page.
+- ✅ **Order Search** (`/order-search`) — search by order number, first name, last name, or phone; results table with editable Bin field, Verify toggle, and Picked Up button.
+- ✅ **Workflow list pages** — Orders to Verify, Orders to Table, Frames to Build, Orders to Fit, Must Have Orders, Delayed Orders. Each uses the same round status buttons and Server Actions as Daily Detail, so a change on any page shows up on all of them; a row leaves the list as soon as it no longer matches.
+- ✅ **Mat List + Received Mats** (`/mats-to-order`) — per-mat state in the `MatToOrder` table. Remove is a soft delete.
+- ✅ **Glass List** (`/glass-review`) — read-only list of orders needing glass.
+- ✅ **Deployed on Vercel + Neon** — live on the internet, auto-deploys on every push to `main`.
 
-### Order Status Tracking (Task 1.1) — Recently Completed
-The major migration from localStorage to database has been done:
-- All status buttons on Daily Detail and Order Details pages now save to the database.
-- Order statuses are tracked as **timestamps** (`verifiedAt`, `tabledAt`, `builtAt`, `completedAt`, `mustHaveStatus`, `delayedStatus`, `pickedUpAt`).
-- Status changes trigger Server Actions in `src/app/actions/order-status.ts`.
-- Pages automatically revalidate when a status changes, so all devices see fresh data.
-- **Bin location** is now fully functional: saved to database immediately on input, can be entered at any point in order workflow, persists across navigation.
+### Not yet built (left-sidebar placeholder links)
+- **Photo Orders**, **To Scan**, **Ready to Print** — photo-workflow pages
+- **Supplies List**, **PC Order** — right-sidebar links
 
-### Still to migrate: writes
-A couple of interactive features still use **browser localStorage**:
-
-1. **The "Order" button** on the Frame List, which drives the per-vendor order lists — logic in `src/lib/vendor-orders.ts`.
-2. **The due-date override** in the top bar — logic inside `src/components/layout/top-bar.tsx`.
-
-These could be migrated using the same Server Action pattern if persistence is needed.
-
-### Recommended next steps (roughly in order)
-1. **Build the Customer Directory and Vendor screens** (the top-bar buttons are placeholders today).
-2. **Add the remaining left-sidebar pages** (Orders to Verify, Orders to Table, etc.) — many can reuse the existing order-table components with different filters in `db.ts`.
-3. **Complete the "Frames to Build" list page** — the query exists (`getOrdersReadyForFrameBuild()` in `order-status.ts`), but the page layout is still pending client direction.
-4. **Add authentication** so only shop staff can log in (before going live).
-5. **Sit down with the shop** to finalize the data fields (the schema is a first draft and expected to change).
+### Recommended next steps
+1. **Build the photo-workflow pages** — the list-page pieces in `components/order-lists/` can be reused.
+2. **Add authentication** so only shop staff can log in (before sharing the URL publicly).
+3. **Finalize the data fields** with the shop — the schema is a first draft and expected to change.
 
 ---
 
@@ -332,38 +365,19 @@ Click [Completed] → ready for pickup
 Click [Picked Up] → order removed from bins
 ```
 
-### Frame Ordering Workflow (Status: Partially implemented)
+### Frame Ordering Workflow
 
-| Step | Page | What happens | Status |
-|------|------|--------------|--------|
-| 1 | **Frame List** | Staff see frames that need ordering, grouped by vendor | ✅ Working |
-| 2 | **Frame List** | Click **Order** button on a frame → it moves to a vendor's order list | ⚠️ Uses localStorage (could be DB) |
-| 3 | **To Order lists** (right panel) | Staff see per-vendor lists of frames to order | ✅ Working |
-| 4 | **To Order lists** | Click **Ordered** button → frame is marked as sent to vendor | ⚠️ Uses localStorage |
-| 5 | **Frame List** | Click **Received** button → frame disappears from list (simulates vendor ship arrival) | ✅ Working |
-| 6 | **Frames to Build list** (future) | Staff see frames ready to use in jobs | ⏳ Page not yet built |
+All steps are fully database-backed. The `FrameToOrder` table tracks each frame through its lifecycle using a `status` field.
 
-### What's Implemented vs. What's Missing
-
-**✅ Implemented:**
-- Order status tracking (8 timestamps) — all save to database with immediate persistence
-- Status buttons on Daily Detail and Order Details pages
-- Progress timeline on order details
-- Bin location tracking — fully functional with persistent database storage
-- Frame list with Order/Received buttons
-- Per-vendor order lists (view only)
-- Binventory page with sorting, filtering, and pickup workflow
-
-**⚠️ Partially working (uses localStorage):**
-- Frame "Order" button (marks frame as sent to vendor)
-
-**⏳ Not yet built:**
-- "Frames to Build" list page (customer frames that are verified & received, ready to assemble)
-- "Orders to Verify" list (filters orders by unverified status)
-- "Orders to Table" list (filters orders by untabled status)
-- Customer Directory
-- Vendor management screens
-- Due date override saving to database
+| Step | Page | What happens | DB change |
+|------|------|--------------|-----------|
+| 1 | **Frame List** (`/frames-to-order`) | Staff see frames with `status = "On List"`, grouped by vendor | — |
+| 2 | **Frame List** | Click **Order** → frame moves to vendor's To Order list | `status → "Ordered"` |
+| 3 | **To Order list** (`/order-lists/[vendor]`) | Staff see frames with `status = "Ordered"` for that vendor; link appears in right panel | — |
+| 4 | **To Order list** | Click **Ordered** → toggles the ordered date (confirms it was sent) | `orderedDate` set/cleared |
+| 5 | **To Order list** | Click **Remove** → pulls frame off the list without receiving | `status → "Removed"` |
+| 6 | **To Order list** | Click **Received** → frame arrives from vendor, disappears from list | `status → "Received"`, `receivedDate` set |
+| 7 | **Frames to Build** (`/frames-to-build`) | Staff see orders where frame is received + order is verified + not built; the Frame Built button clears it | `builtAt` set |
 
 ---
 
@@ -422,74 +436,48 @@ That's it — button clicks → Server Action → database update → page refre
 
 ## 12. Deploying & Hosting on Vercel
 
-Vercel is the company that makes Next.js, so deployment is about as smooth as it gets. The catch for us: **Vercel hosts the app, but not the database.** PostgreSQL needs to live somewhere too. The plan below covers both.
+The app is **already live** on Vercel, connected to a Neon-hosted PostgreSQL database. This section documents how the setup works and what to do when you make changes.
 
-### Step 1 — Put the code on GitHub
-Vercel deploys from a Git repository. If the project isn't on GitHub yet:
-1. Create a new (private) repository on github.com.
-2. From the repo root, push the code:
-   ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/frame-shop.git
-   git push -u origin main
-   ```
-`.env` is gitignored, so your local database password won't be uploaded — you'll set the production one in Vercel directly (Step 3).
+### Current setup
+- **GitHub repo:** `github.com/GeoffreyHarrison/frame-shop`
+- **Vercel project:** Root Directory is set to `frontend` (the Next.js app is in the subfolder)
+- **Database:** Neon (neon.tech) — find the connection string in the Neon dashboard under Connection Details
+- **Environment variable in Vercel:** `DATABASE_URL` = your Neon connection string
 
-### Step 2 — Create a production database
-Your local PostgreSQL won't be reachable from the internet, so you need a hosted one. Easiest options (all have free tiers):
-- **Vercel Postgres** — built into the Vercel dashboard, simplest integration.
-- **Neon** (neon.tech) — generous free tier, Postgres-native.
-- **Supabase** (supabase.com) — Postgres plus extras.
+### Deploying code changes
+Every `git push` to `main` auto-deploys. Vercel rebuilds the app and ships it within a couple of minutes. No manual steps needed for code-only changes.
 
-Whichever you pick, you'll get a **connection string** that looks like:
+```bash
+git add <files>
+git commit -m "your message"
+git push origin main
 ```
-postgresql://user:password@host.region.provider.com:5432/dbname
-```
-Copy it — that's your production `DATABASE_URL`.
 
-### Step 3 — Import the project into Vercel
-1. Go to vercel.com and sign up / log in (you can use your GitHub account).
-2. Click **Add New → Project**, then import your `frame-shop` repo.
-3. **Important — set the Root Directory to `frontend`.** Our Next.js app lives in the `frontend/` subfolder, not the repo root. Vercel needs to know this or the build will fail.
-4. Under **Environment Variables**, add:
-   - Name: `DATABASE_URL`
-   - Value: the production connection string from Step 2
-5. Click **Deploy**.
+### Applying database schema changes
+When you add or change something in `prisma/schema.prisma`:
 
-Vercel auto-detects Next.js and runs the build for you. First deploy takes a couple of minutes.
-
-### Step 4 — Set up the production database tables
-The hosted database starts empty — it has no tables yet. Apply your schema to it. From your machine, temporarily point at production and run the migration:
-
+**1. Create the migration locally (on your dev machine):**
 ```bash
 cd frontend
-DATABASE_URL="your-production-connection-string" npx prisma migrate deploy
+npx prisma migrate dev --name describe_your_change
 ```
+This updates your local database and creates a new file in `prisma/migrations/`.
 
-`migrate deploy` applies your existing migrations to the production database (it's the production-safe version of `migrate dev`). To also load the dummy data:
+**2. Push your code (including the new migration file) to GitHub** — Vercel will deploy the new app code.
 
+**3. Apply the migration to the production (Neon) database:**
 ```bash
-DATABASE_URL="your-production-connection-string" npx prisma db seed
+cd frontend
+DATABASE_URL="your-neon-connection-string" npx prisma migrate deploy
 ```
+`migrate deploy` only applies migrations that haven't run yet — it's safe to run repeatedly and won't touch your data. Get the connection string from the Neon dashboard.
 
-(Once real data exists, you'd skip the seed step.)
+> **Important:** Vercel deploys new code automatically, but it does NOT run migrations automatically. You must run step 3 manually any time the schema changes.
 
-### Step 5 — Confirm the build command handles Prisma
-Because our Prisma client is generated into `src/generated/` (which isn't committed to git), Vercel must regenerate it during the build. Add a `postinstall` script so this happens automatically. In `frontend/package.json` scripts, add:
-```json
-"postinstall": "prisma generate"
-```
-This runs `prisma generate` every time Vercel installs dependencies, ensuring the typed client exists before the build. (Do this before your first successful deploy — if the first build fails with a Prisma client error, this is the fix.)
-
-### After it's live
-- **Every `git push` to `main` auto-deploys.** Vercel rebuilds and ships the new version in a couple minutes.
-- **Pull requests get preview URLs** automatically — a temporary live copy of your branch to review before merging.
-- You get a free `your-project.vercel.app` URL; you can attach a custom domain later in the Vercel dashboard.
-
-### Deployment gotchas to remember
-- Root Directory **must** be `frontend`.
-- `DATABASE_URL` must be set in Vercel's environment variables (production won't see your local `.env`).
-- Run `prisma migrate deploy` against production whenever you change the schema — Vercel does not do this for you.
-- The `postinstall: prisma generate` script is required because the generated client isn't in git.
+### Gotchas to remember
+- Vercel Root Directory **must** be `frontend` — don't change this.
+- `DATABASE_URL` must stay set in Vercel's Environment Variables (it doesn't read your local `.env`).
+- The `postinstall: prisma generate` script in `package.json` is required — it regenerates the Prisma client on every Vercel build (since the generated client isn't committed to git).
 
 ---
 
@@ -501,9 +489,12 @@ This runs `prisma generate` every time Vercel installs dependencies, ensuring th
 | Change how something looks | the component in `src/components/` |
 | Change colors/theme | `src/app/globals.css` |
 | Change/add a database query | `src/lib/db.ts` |
-| Change the database structure | `prisma/schema.prisma` (then migrate) |
+| Change the database structure | `prisma/schema.prisma` (then migrate — see Section 7 & 12) |
 | Add a new URL/page | new folder + `page.tsx` in `src/app/` |
+| Save a button click to the database | write a Server Action in `src/app/actions/` |
 | Reload test data | `npm run db:seed` |
 | Inspect the database visually | `npm run db:studio` |
 | Understand a data shape | `src/lib/types.ts` |
+| Apply schema changes to production | `DATABASE_URL="..." npx prisma migrate deploy` |
+| See all built pages | Section 9 of this guide |
 ```
